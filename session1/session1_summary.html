@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Total Session Summary Notes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            color: #222;
+            background-color: #f8f9fb;
+        }
+
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+            background-color: #ffffff;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-weight: 600;
+            line-height: 1.3;
+            color: #111827;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.35rem;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        p {
+            margin: 0.5rem 0 0.75rem;
+        }
+
+        ul {
+            margin: 0.25rem 0 0.75rem 1.5rem;
+            padding: 0;
+        }
+
+        li {
+            margin: 0.25rem 0;
+        }
+
+        footer {
+            background-color: navy;
+            /* navy blue footer */
+            color: #ffffff;
+            padding: 1.5rem 1rem 1rem;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 0.25rem 0 0.75rem;
+        }
+
+        footer img {
+            max-width: 180px;
+            height: auto;
+            display: block;
+            margin: 0.5rem auto 0;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>Total Session Summary Notes</h1>
+
+        <h2>Part 1: Session Goals, New Tools, and Foundational Concepts (Vector Embeddings)</h2>
+
+        <h3>Session Objective and Context</h3>
+        <p>
+            The session is the second point on the journey toward RAG (Retrieval-Augmented Generation),
+            following the previous discussion on notebook LLMs. The immediate goal for this session was
+            warming up, writing some Python code in a development environment, testing the Olama server,
+            checking API keys, and writing simple Python code.
+        </p>
+
+        <h3>Development Environment Update: Google Anti-Gravity</h3>
+        <p>
+            A new development environment, Google Anti-Gravity, was introduced, having appeared two days
+            prior to the session. It is a clone of Visual Studio Code.
+        </p>
+        <ul>
+            <li>
+                <strong>Gemini Integration:</strong> Anti-Gravity is specific because it is repackaged by
+                Google and uses the Gemini 3 Pro model, which also recently exited beta.
+            </li>
+            <li>
+                <strong>Performance:</strong> Gemini 3 Pro is currently considered "top of the chart,"
+                better for coding than GPT-4 and Grok, based on some results. Google is aggressively trying
+                to gain users from ChatGPT.
+            </li>
+            <li>
+                <strong>Agentic Setup:</strong> The environment features an agentic setup, which can
+                include a planner, manager, and developer working collaboratively. For trivial tasks shown
+                in the session, the "fast" setting was used.
+            </li>
+        </ul>
+
+        <h3>Core Concept: Vector Embeddings</h3>
+        <p>The path to RAG must start with Vector Embeddings.</p>
+        <ul>
+            <li>
+                <strong>Definition:</strong> Vector embeddings are created by tokenizing input (word or
+                text) and converting it into multi-dimensional numbers or features. They are the result of
+                mapping a higher-dimensional input (like text, audio, or video) to a lower-dimensional
+                space.
+            </li>
+            <li>
+                <strong>Purpose:</strong> The main reason for this dimensionality reduction is that neural
+                networks process vectors, especially normalized vectors with values between 0 and 1, most
+                optimally.
+            </li>
+            <li>
+                <strong>Storage and Search:</strong> Embeddings are often stored in a vector database for
+                similarity search, typically using cosine similarity.
+            </li>
+            <li>
+                <strong>Normalization:</strong> Normalization (like L1 or L2) is crucial.
+                <ul>
+                    <li>
+                        <strong>L2 Normalization (Euclidean/Pythagorean):</strong> Calculates distance using
+                        the Pythagorean theorem (e.g., for a 4, 3 vector, distance is 5).
+                    </li>
+                    <li>
+                        <strong>L1 Normalization (Manhattan):</strong> Calculates distance by summing the
+                        absolute differences (e.g., 4 + 3 = 7), useful when traveling along predefined paths
+                        (like avenues in Manhattan).
+                    </li>
+                    <li>
+                        <strong>Mathematical Necessity:</strong> Normalization prevents large values from
+                        dominating and "swallowing" smaller, but potentially relevant, information.
+                        Unnormalized values cannot be optimized correctly in neural networks.
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>The Mechanism of Embeddings (Under the Hood)</h3>
+        <ul>
+            <li>
+                <strong>Architecture:</strong> Neural networks used for embeddings often include an encoder
+                and a decoder (like an auto-encoder).
+            </li>
+            <li>
+                <strong>Training:</strong> Embeddings are often trained using supervised learning, where
+                every input has a known output. Networks learn parameters (weights/coefficients) through
+                optimization methods like backpropagation. These weights constitute the "intelligence" or
+                "knowledge" of the network.
+            </li>
+            <li>
+                <strong>Inference:</strong> Once trained, the network is used for inference by cutting off
+                the output layer, and the compressed representation (the embedding) is read from one of the
+                hidden layers.
+            </li>
+            <li>
+                <strong>Encoding vs. Embedding:</strong> Input must first be encoded (e.g., converting
+                words to binary numbers based on a dictionary). The embedding is the compressed record
+                pulled from the hidden layer after the encoded input is processed by the network.
+            </li>
+            <li>
+                <strong>Dominant Architectures:</strong>
+                <ul>
+                    <li>
+                        Initial computer vision classification used Convolutional Neural Networks (CNNs), which
+                        break large blocks (like images) into smaller blocks for processing.
+                    </li>
+                    <li>
+                        Today, the Transformer architecture dominates Large Language Models (LLMs).
+                    </li>
+                    <li>
+                        <strong>Attention Mechanism:</strong> Transformers emerged from the 2017 Google paper
+                        "Attention is All You Need," which introduced the concept of attention (pažnja).
+                        Attention allows the model to focus on specific words depending on the context,
+                        dictating the probability of the next word generation.
+                    </li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>Old vs. New Embedding Methods</h3>
+        <p>
+            Prior to current LLMs, methods like Word2Vec (Google model), GloVe (Global Vectors), and
+            FastText (Facebook model) were used. These can be locally implemented and run fast, but they
+            operate in a separate vector space and cannot be mixed.
+        </p>
+
+        <h3>Machine Learning (ML) vs. Deep Learning (DL) for Classification</h3>
+        <p>
+            While LLMs can perform classification, traditional ML models are often preferred for
+            specific, trivial, or binary problems, especially when resources are limited or high speed is
+            required.
+        </p>
+        <ul>
+            <li>
+                <strong>ML Benefits:</strong> ML models (available in libraries like scikit-learn), such as
+                the Support Vector Machine (SVM), are excellent, fast classifiers, achieving high precision
+                (e.g., 90%). Training ML models for specific cases (if not big data) is trivial compared to
+                training complex neural networks, which can take days.
+            </li>
+            <li>
+                <strong>Trade-off:</strong> If the problem is highly scalable and requires complex
+                processing, traditional ML might be the answer. If speed and resource efficiency (e.g.,
+                running on a Raspberry Pi) are needed for simple classification (like detecting knots on a
+                wooden board), ML should be used instead of LLMs.
+            </li>
+        </ul>
+
+        <h2>Part 2: Practical Application, Local Inference, and Future Directions</h2>
+
+        <h3>Semantic Similarity Demonstration (Olama and Nomic)</h3>
+        <p>
+            The session demonstrated semantic similarity using a local Olama server with the Nomic
+            Embedding model.
+        </p>
+        <ul>
+            <li>
+                <strong>Process:</strong> The Python script sends an HTTP POST request to Olama with the
+                text prompt. The result is a vector.
+            </li>
+            <li>
+                <strong>Similarity Calculation:</strong> Cosine similarity is used to measure how close two
+                text vectors are.
+            </li>
+            <li>
+                <strong>Results &amp; Context Sensitivity:</strong> The test comparing sentences (e.g.,
+                "Cat is sleeping on the sofa" and "Dog is resting on the couch") showed that the embedding
+                setup favored context (the situation of resting/sleeping) over the specific words (the
+                subject, cat vs. dog). This capability is the essence of semantic search, allowing for
+                results based on meaning rather than just keywords.
+            </li>
+        </ul>
+
+        <h3>Further Exploration and Tasks</h3>
+        <p>Two modifications were suggested for participants to try:</p>
+        <ol>
+            <li>
+                <strong>Compare Embeddings:</strong> Substitute the Olama Nomic embedding model with an
+                OpenAI embedding model (e.g., text-embedding-3-small or large) to compare results.
+            </li>
+            <li>
+                <strong>Visualization:</strong> Use the T-SNE plot library to visualize the
+                multi-dimensional vectors (e.g., 768 dimensions) in a 2D or 3D coordinate system. This
+                visualization helps identify clusters (cluster analysis), which can be used to discover
+                hidden concepts or group similar complaints/topics, useful in areas like customer support
+                or social media research.
+            </li>
+        </ol>
+
+        <h3>Local LLM and Inference Setup</h3>
+        <p>Discussions focused on running LLMs locally for faster inference:</p>
+        <ul>
+            <li>
+                <strong>Hardware:</strong> Running large models often requires GPUs that support CUDA,
+                specifically mentioning the RTX 3090 (24 GB of VRAM).
+            </li>
+            <li>
+                <strong>Inference Tools:</strong>
+                <ul>
+                    <li>
+                        <strong>VLLM:</strong> Mentioned as the fastest library for large model inference.
+                    </li>
+                    <li>
+                        <strong>LM Studio:</strong> Recommended as a convenient tool for local inference,
+                        especially when not working headlessly. LM Studio allows users to configure the GPU
+                        Offload (how many layers run on the GPU vs. CPU/system RAM) and the Context Size.
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <strong>Model Recommendation:</strong> The GPT-OSS 20B model was highly recommended for
+                local use due to its solid performance (comparable to GPT-3.5 mini) and its ability to run
+                quickly on systems like the RTX 3090, achieving speeds of 70 tokens per second.
+            </li>
+        </ul>
+
+        <h3>Future Topics and Agentic Systems</h3>
+        <p>
+            The next session will focus on document classification and using open-source RAG
+            implementations.
+        </p>
+        <ul>
+            <li>
+                The speaker mentioned achieving the best results with an Agentic RAG implementation built
+                using LangChain/LangGraph.
+            </li>
+            <li>
+                The trend in the industry is moving towards using smaller, specialized models combined with
+                agents to optimize costs and resources compared to relying solely on massive LLMs.
+            </li>
+        </ul>
+
+        <h3>Creative AI Demonstration: Suno.com</h3>
+        <p>
+            A demonstration of the AI music generation platform Suno.com was provided.
+        </p>
+        <ul>
+            <li>
+                <strong>Functionality:</strong> Suno allows users to input custom lyrics (including Serbian)
+                and specify a musical style (e.g., "Serbian turbo folk," "New Age rock," "Finnish dead
+                metal") to generate full songs, including vocals and instrumentation.
+            </li>
+            <li>
+                <strong>Commercial Use:</strong> The service allows for commercial use of generated songs
+                for a monthly fee (e.g., 10 EUR), giving users authorship rights.
+            </li>
+            <li>
+                <strong>Future Vision:</strong> The speaker projected that in three years, personalized,
+                fully generated media (films, music, series) will be the norm, where users can specify
+                actors, genre, and plot details.
+            </li>
+        </ul>
+
+        <p>
+            This session served as a comprehensive introduction to the fundamental role of vector
+            embeddings and semantic search in modern LLM applications, offering both theoretical
+            background (normalization, architectures) and practical tools (Olama, LM Studio).
+            Understanding these concepts is essential groundwork for the upcoming RAG implementation.
+        </p>
+    </main>
+
+    <footer>
+        <p>Total Session Summary Notes</p>
+        <img src="https://static.tildacdn.net/tild3732-3136-4236-a133-393365336161/logo.png" alt="Logo" />
+    </footer>
+</body>
+
+</html>

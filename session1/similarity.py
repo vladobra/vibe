@@ -28,8 +28,8 @@ if __name__ == "__main__":
         "A dog is resting on the couch.",
         "I am driving to the office in my car.",
         "my pc is fast",
-        "my apple was chip but works fine",
-        "Apples are tasty"
+        "my apple was cheap but works fine",
+        "Apples goes well with wine"
     ]
 
     # Get embeddings
