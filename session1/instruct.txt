@@ -1,0 +1,8 @@
+#libs
+ollama, openai
+# models
+ollama pull nomic-embed-text
+
+# resources
+https://medium.com/@laoluoyefolu/introduction-to-embeddings-with-openai-api-a-beginners-guide-e6af6fff141c
+

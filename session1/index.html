@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contrastive Training Example for Embeddings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      margin: 20px;
+      max-width: 900px;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    table {
+      border-collapse: collapse;
+      margin: 10px 0;
+      width: 100%;
+      max-width: 800px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 6px 8px;
+      text-align: left;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    .section {
+      margin-bottom: 24px;
+    }
+    .architecture-box {
+      border: 1px solid #ddd;
+      padding: 12px 14px;
+      border-radius: 4px;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Tiny High-Level Example: Training Text Embeddings</h1>
+
+  <div class="section">
+    <h2>Goal</h2>
+    <p>
+      We want to learn embeddings for questions and answers, such that
+      matching question–answer pairs are close in embedding space and
+      non-matching ones are far apart.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Training Data</h2>
+    <p>We build a dataset like this:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>text_a (question)</th>
+          <th>text_b (answer)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>"What is the capital of France?"</td>
+          <td>"Paris is the capital of France."</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>"What is 2 + 2?"</td>
+          <td>"2 + 2 equals 4."</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>"What is the capital of Germany?"</td>
+          <td>"Berlin is the capital of Germany."</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Each row is a positive pair: (question, correct answer).</p>
+    <p>
+      We put several rows into a minibatch, for example rows 1–3 at once.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>What Is the Input to the Network?</h2>
+
+    <p>For one batch:</p>
+
+    <ul>
+      <li><code>text_a_1 = "What is the capital of France?"</code></li>
+      <li><code>text_b_1 = "Paris is the capital of France."</code></li>
+      <li><code>text_a_2 = "What is 2 + 2?"</code></li>
+      <li><code>text_b_2 = "2 + 2 equals 4."</code></li>
+      <li><code>text_a_3 = "What is the capital of Germany?"</code></li>
+      <li><code>text_b_3 = "Berlin is the capital of Germany."</code></li>
+    </ul>
+
+    <p>So the input to the model is just a batch of texts.</p>
+  </div>
+
+  <div class="section">
+    <h2>What Does the Model Output?</h2>
+
+    <p>The model encodes each text into an embedding using a shared encoder:</p>
+
+    <p>
+      <code>e<sub>a1</sub> = Encoder(text_a_1)</code> &rarr; vector for Q1<br />
+      <code>e<sub>b1</sub> = Encoder(text_b_1)</code> &rarr; vector for A1<br />
+      similarly for <code>e<sub>a2</sub>, e<sub>b2</sub>, e<sub>a3</sub>, e<sub>b3</sub></code>.
+    </p>
+
+    <p>Then we compute similarities (e.g., cosine similarity) between all question–answer pairs:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>A1</th>
+          <th>A2</th>
+          <th>A3</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Q1</th>
+          <td>cos(e<sub>a1</sub>, e<sub>b1</sub>)</td>
+          <td>cos(e<sub>a1</sub>, e<sub>b2</sub>)</td>
+          <td>cos(e<sub>a1</sub>, e<sub>b3</sub>)</td>
+        </tr>
+        <tr>
+          <th>Q2</th>
+          <td>cos(e<sub>a2</sub>, e<sub>b1</sub>)</td>
+          <td>cos(e<sub>a2</sub>, e<sub>b2</sub>)</td>
+          <td>cos(e<sub>a2</sub>, e<sub>b3</sub>)</td>
+        </tr>
+        <tr>
+          <th>Q3</th>
+          <td>cos(e<sub>a3</sub>, e<sub>b1</sub>)</td>
+          <td>cos(e<sub>a3</sub>, e<sub>b2</sub>)</td>
+          <td>cos(e<sub>a3</sub>, e<sub>b3</sub>)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Targets (Labels)</h2>
+
+    <p>For each question, the correct answer is the one in the same row:</p>
+    <ul>
+      <li>Q1 &rarr; A1 is the correct pair</li>
+      <li>Q2 &rarr; A2 is the correct pair</li>
+      <li>Q3 &rarr; A3 is the correct pair</li>
+    </ul>
+
+    <p>So the targets are the indices of the correct answers in each row:</p>
+
+    <ul>
+      <li>Q1’s correct index = 1</li>
+      <li>Q2’s correct index = 2</li>
+      <li>Q3’s correct index = 3</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Loss</h2>
+
+    <p>
+      We apply a softmax over each row of similarities and a cross-entropy loss:
+    </p>
+
+    <ul>
+      <li>For Q1, the probability assigned to A1 should be close to 1.</li>
+      <li>For Q2, the probability assigned to A2 should be close to 1.</li>
+      <li>For Q3, the probability assigned to A3 should be close to 1.</li>
+    </ul>
+
+    <p>
+      This is supervised learning: we know which answer goes with which question.
+      The embeddings are adjusted so that:
+    </p>
+
+    <ul>
+      <li>e<sub>a1</sub> is close to e<sub>b1</sub> and far from e<sub>b2</sub>, e<sub>b3</sub></li>
+      <li>e<sub>a2</sub> is close to e<sub>b2</sub>, etc.</li>
+    </ul>
+
+    <p>
+      After training, we discard the <em>similarity + loss</em> part, and keep only:
+    </p>
+
+    <p><code>text &rarr; Encoder &rarr; embedding</code></p>
+  </div>
+
+  <hr />
+
+  
+
+</body>
+</html>
