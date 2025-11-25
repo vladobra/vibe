@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>"Čas 2 - 25.11.2025 - Generative AI, Vector Stores & RAG – Study Notes"</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        :root {
+            --bg: #0f172a;
+            --bg-alt: #020617;
+            --card-bg: #020617;
+            --card-border: #1e293b;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56, 189, 248, 0.1);
+            --accent-2: #a855f7;
+            --accent-2-soft: rgba(168, 85, 247, 0.1);
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --text-strong: #f9fafb;
+            --badge-bg: rgba(15, 23, 42, 0.8);
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.85);
+            --shadow-card: 0 12px 30px rgba(15, 23, 42, 0.65);
+            --code-bg: #020617;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        @media (min-width: 960px) {
+            .page {
+                padding: 32px 0 64px;
+            }
+        }
+
+        header.hero {
+            display: grid;
+            grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr);
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            header.hero {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .hero-main h1 {
+            font-size: clamp(2.1rem, 3vw, 2.6rem);
+            margin: 0 0 8px;
+            color: #f9fafb;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-main p {
+            margin: 0 0 12px;
+            color: var(--text-muted);
+            max-width: 40rem;
+        }
+
+        .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .hero-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .hero-panel {
+            background: radial-gradient(circle at top left, #1d283a, #020617 55%);
+            border-radius: 22px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            box-shadow: var(--shadow-soft);
+            padding: 16px 16px 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-panel::before {
+            content: "";
+            position: absolute;
+            inset: -40%;
+            background:
+                radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.16), transparent 55%),
+                radial-gradient(circle at 90% 100%, rgba(168, 85, 247, 0.18), transparent 55%);
+            mix-blend-mode: screen;
+            opacity: 0.75;
+            pointer-events: none;
+        }
+
+        .hero-panel-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-panel h2 {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+        }
+
+        .hero-panel p {
+            margin: 0 0 12px;
+            font-size: 0.86rem;
+            color: var(--text-muted);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 2.2fr 2.1fr;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 0.78rem;
+        }
+
+        .hero-chip {
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 9px 10px;
+        }
+
+        .hero-chip strong {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-strong);
+            margin-bottom: 2px;
+        }
+
+        .hero-chip span {
+            color: var(--text-muted);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 2.5fr);
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        @media (max-width: 960px) {
+            .layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .toc {
+            position: sticky;
+            top: 16px;
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            box-shadow: var(--shadow-card);
+            padding: 14px 14px 10px;
+            font-size: 0.78rem;
+        }
+
+        .toc h2 {
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+            color: var(--text-muted);
+        }
+
+        .toc ol {
+            list-style: none;
+            margin: 0;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 2px 0;
+        }
+
+        .toc a {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: background 0.18s, color 0.18s, transform 0.18s;
+        }
+
+        .toc a:hover {
+            background: rgba(51, 65, 85, 0.7);
+            color: var(--text-strong);
+            transform: translateX(2px);
+        }
+
+        .toc-section-label {
+            margin-top: 6px;
+            font-size: 0.73rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: #6b7280;
+        }
+
+        main.notes {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        section.card {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-card);
+            padding: 16px 16px 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        section.card::before {
+            content: "";
+            position: absolute;
+            inset: -40%;
+            background:
+                radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.12), transparent 58%),
+                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.14), transparent 55%);
+            mix-blend-mode: screen;
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        .card-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .card-title .badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 999px;
+            background: var(--badge-bg);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9), 0 0 22px rgba(56, 189, 248, 0.35);
+        }
+
+        .card-title h2 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-strong);
+            letter-spacing: -0.01em;
+        }
+
+        .card-tagline {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        h3 {
+            margin: 10px 0 3px;
+            font-size: 0.9rem;
+            color: var(--accent-2);
+        }
+
+        p {
+            margin: 2px 0 6px;
+            font-size: 0.84rem;
+        }
+
+        ul,
+        ol {
+            margin: 4px 0 6px 1rem;
+            padding-left: 0.9rem;
+            font-size: 0.84rem;
+        }
+
+        li+li {
+            margin-top: 2px;
+        }
+
+        strong {
+            color: var(--text-strong);
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 4px 0 4px;
+        }
+
+        .pill {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-muted);
+        }
+
+        .pill.accent {
+            border-color: rgba(56, 189, 248, 0.8);
+            background: var(--accent-soft);
+            color: #e0f2fe;
+        }
+
+        .pill.accent-2 {
+            border-color: rgba(168, 85, 247, 0.8);
+            background: var(--accent-2-soft);
+            color: #f3e8ff;
+        }
+
+        details {
+            margin-top: 6px;
+            border-radius: var(--radius-md);
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            padding: 7px 9px;
+        }
+
+        details summary {
+            list-style: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary::after {
+            content: "▼";
+            font-size: 0.7rem;
+            opacity: 0.7;
+            transition: transform 0.18s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(-180deg);
+        }
+
+        details div {
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: var(--text-main);
+        }
+
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.8rem;
+            padding: 1px 4px;
+            background: var(--code-bg);
+            border-radius: 4px;
+            border: 1px solid rgba(15, 23, 42, 0.9);
+            color: #e5e7eb;
+        }
+
+        .note-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #9ca3af;
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- HERO -->
+        <header class="hero">
+            <div class="hero-main">
+                <h1>"Čas 2 - 25.11.2025 - Generative AI, Vector Stores & RAG – Study Notes"</h1>
+                <p>
+                    Structured, high-level notes on modern Generative AI: Transformers,
+                    AGI constraints, vector databases, RAG with LlamaIndex, and practical
+                    deployment concerns.
+                </p>
+                <div class="hero-badges">
+                    <span class="hero-badge">Transformers &amp; LLMs</span>
+                    <span class="hero-badge">Vector Stores &amp; Embeddings</span>
+                    <span class="hero-badge">RAG Architecture</span>
+                    <span class="hero-badge">Agents &amp; Tool Calling</span>
+                </div>
+            </div>
+
+            <aside class="hero-panel">
+                <div class="hero-panel-inner">
+                    <h2>Learning Map</h2>
+                    <p>Keep this mental model in mind as you work through the cards:</p>
+                    <div class="hero-grid">
+                        <div class="hero-chip">
+                            <strong>1. Models</strong>
+                            <span>Transformers &amp; LLMs generate sequences (text, audio, images).</span>
+                        </div>
+                        <div class="hero-chip">
+                            <strong>2. Memory</strong>
+                            <span>Embeddings &amp; vector stores give long-term, searchable memory.</span>
+                        </div>
+                        <div class="hero-chip">
+                            <strong>3. RAG</strong>
+                            <span>LLMs + vector search = grounded answers from your own data.</span>
+                        </div>
+                        <div class="hero-chip">
+                            <strong>4. Agents</strong>
+                            <span>Tool calling &amp; protocols let models act in the real world.</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </header>
+
+        <div class="layout">
+            <!-- TOC -->
+            <nav class="toc">
+                <h2>Topics Overview</h2>
+
+                <div class="toc-section-label">Core Concepts</div>
+                <ol>
+                    <li><a href="#foundations">1. Foundations of Generative AI</a></li>
+                    <li><a href="#beyond-text">2. Transformers Beyond Text</a></li>
+                    <li><a href="#agi">3. Towards AGI</a></li>
+                    <li><a href="#industry">4. Industry &amp; AI Bubble</a></li>
+                    <li><a href="#programming-future">5. Future of Programming &amp; Tools</a></li>
+                </ol>
+
+                <div class="toc-section-label">Memory &amp; Retrieval</div>
+                <ol>
+                    <li><a href="#embeddings-vector-stores">6. Embeddings &amp; Vector Stores</a></li>
+                    <li><a href="#vector-comparisons">7. Vector Store Landscape</a></li>
+                    <li><a href="#performance">8. Performance &amp; Benchmarks</a></li>
+                    <li><a href="#project-impl">9. Current Project Implementation</a></li>
+                </ol>
+
+                <div class="toc-section-label">RAG &amp; Deployment</div>
+                <ol>
+                    <li><a href="#rag-env">10. RAG Setup with LlamaIndex</a></li>
+                    <li><a href="#rag-architecture">11. RAG Architecture &amp; Retrieval</a></li>
+                    <li><a href="#context-cost">12. LLM Context &amp; Cost</a></li>
+                    <li><a href="#prompt-engineering">13. Prompt Engineering</a></li>
+                    <li><a href="#llama-deployment">14. LlamaIndex Deployment</a></li>
+                    <li><a href="#tech-environment">15. Technical Environment Notes</a></li>
+                    <li><a href="#future-plans">16. Future Directions &amp; Use Cases</a></li>
+                </ol>
+            </nav>
+
+            <!-- MAIN NOTES -->
+            <main class="notes">
+
+                <!-- 1. Foundations -->
+                <section id="foundations" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">1</div>
+                                <h2>Foundations of Generative AI &amp; Sequential Processing</h2>
+                            </div>
+                            <div class="card-tagline">From RNNs to Transformers</div>
+                        </div>
+
+                        <div class="note-label">Key ideas</div>
+                        <ul>
+                            <li>
+                                <strong>Suno &amp; music generation</strong>: Systems like
+                                <strong>Suno</strong> use Transformer-based architectures to
+                                generate music as a sequence of tokens (e.g., notes, audio codes).
+                            </li>
+                            <li>
+                                <strong>Transformers as the LLM backbone</strong>:
+                                Transformers are the core neural architecture behind
+                                <strong>Large Language Models (LLMs)</strong>.
+                                LLMs generate text by predicting the next token based on
+                                previous context, often conditioned by a <strong>prompt</strong>.
+                            </li>
+                        </ul>
+
+                        <h3>Evolution of Neural Networks for Sequences</h3>
+                        <ul>
+                            <li>
+                                <strong>Recurrent Neural Networks (RNNs)</strong>:
+                                Earlier models for sequences; process inputs step-by-step
+                                (letter by letter, word by word) and are not naturally parallel.
+                            </li>
+                            <li>
+                                <strong>LSTMs (Long Short-Term Memory)</strong>:
+                                A specialized RNN architecture designed to better capture
+                                longer-term dependencies in sequences.
+                            </li>
+                            <li>
+                                <strong>Attention added to LSTMs</strong>:
+                                The “attention is all you need” idea, when combined with RNN/LSTM
+                                architectures, significantly improved the ability to predict
+                                the next word based on broader context.
+                            </li>
+                            <li>
+                                <strong>Transformers</strong> eventually replaced pure RNN/LSTM
+                                setups, enabling efficient parallel processing over sequences
+                                and forming today’s LLMs.
+                            </li>
+                        </ul>
+
+                        <h3>Sequential vs. Parallel Processing</h3>
+                        <ul>
+                            <li>
+                                Modern generative systems (e.g., Google Gemini, Nano, Banana,
+                                Leo video models, Suno) rely on <strong>Transformers</strong> and
+                                <strong>sequential generation</strong> conditioned on
+                                previous context.
+                            </li>
+                            <li>
+                                This is different from older <strong>Convolutional Neural
+                                    Networks (CNNs)</strong>, which were more suited to
+                                parallel, spatial processing (e.g., images) than to long
+                                sequences with rich context.
+                            </li>
+                        </ul>
+
+                        <div class="pill-row">
+                            <span class="pill accent">Sequence modeling</span>
+                            <span class="pill accent">Attention</span>
+                            <span class="pill">RNNs &amp; LSTMs</span>
+                            <span class="pill">CNNs vs. Transformers</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. Beyond Text -->
+                <section id="beyond-text" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">2</div>
+                                <h2>Transformers Beyond Text</h2>
+                            </div>
+                            <div class="card-tagline">Images, audio &amp; numeric sequences</div>
+                        </div>
+
+                        <p>
+                            Although Transformers were originally designed for text,
+                            the same sequential machinery can be applied to many kinds of data.
+                        </p>
+
+                        <h3>Images</h3>
+                        <ul>
+                            <li>
+                                An image (e.g., 1024×1024) can be serialized as a
+                                <strong>1D sequence of pixels or patches</strong>.
+                            </li>
+                            <li>
+                                The model then predicts “pixel tokens” step-by-step,
+                                analogous to predicting words.
+                            </li>
+                            <li>
+                                This idea underlies image generation models such as
+                                <strong>Stable Diffusion</strong> and related architectures.
+                            </li>
+                        </ul>
+
+                        <h3>Audio</h3>
+                        <ul>
+                            <li>
+                                Instead of textual embeddings, we use
+                                <strong>audio embeddings</strong> representing segments of sound.
+                            </li>
+                            <li>
+                                The audio stream is treated as a sequence of
+                                <strong>audio tokens or tones</strong>, enabling generative
+                                audio and music.
+                            </li>
+                        </ul>
+
+                        <h3>Other Sequences (e.g., Time Series)</h3>
+                        <ul>
+                            <li>
+                                Numeric sequences (such as stock prices) can also be modeled
+                                as sequences.
+                            </li>
+                            <li>
+                                Realistic stock forecasting with LLM-style models requires
+                                <strong>very large context windows</strong>.
+                            </li>
+                            <li>
+                                Example: to discover correlations, we might feed
+                                <strong>20 years of daily news</strong> (e.g., New York Times)
+                                along with daily stock data.
+                            </li>
+                        </ul>
+
+                        <div class="pill-row">
+                            <span class="pill accent-2">Images → sequences</span>
+                            <span class="pill accent-2">Audio embeddings</span>
+                            <span class="pill">Time-series modeling</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. AGI -->
+                <section id="agi" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">3</div>
+                                <h2>Path to Artificial General Intelligence (AGI)</h2>
+                            </div>
+                            <div class="card-tagline">Architectural gaps to human-like intelligence</div>
+                        </div>
+
+                        <p>
+                            To approach <strong>AGI</strong> or superintelligence, current
+                            model architectures must overcome two major limitations.
+                        </p>
+
+                        <ul>
+                            <li>
+                                <strong>Unlimited context</strong>:
+                                <ul>
+                                    <li>
+                                        Commercial models have limited context windows
+                                        (e.g., around a million tokens; Grok around two million).
+                                    </li>
+                                    <li>
+                                        By contrast, the human brain integrates experiences
+                                        from birth onward into every decision and utterance.
+                                    </li>
+                                    <li>
+                                        A model aiming at human-like consciousness would need
+                                        effectively <strong>unbounded context</strong>—for example,
+                                        access to all 600 million user chats at once—rather than
+                                        resetting state at the end of each session.
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <li>
+                                <strong>Internal thinking loop (auto-thinking)</strong>:
+                                <ul>
+                                    <li>
+                                        Models would benefit from an internal, persistent
+                                        <strong>“while/loop” style thinking process</strong>,
+                                        an “inner voice” running continuously.
+                                    </li>
+                                    <li>
+                                        Combining such an endless internal loop with
+                                        unlimited context could yield systems with
+                                        human-level IQ or beyond.
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h3>Creativity Today</h3>
+                        <ul>
+                            <li>
+                                Current models are already considered highly inventive and
+                                creative by many observers—often at least
+                                <strong>Mensa-level</strong> on specific problem types.
+                            </li>
+                            <li>
+                                They are still not necessarily at the level of a
+                                consistently reliable “genius” across all domains.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 4. Industry & AI Bubble -->
+                <section id="industry" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">4</div>
+                                <h2>Industry Trends &amp; the AI Bubble</h2>
+                            </div>
+                            <div class="card-tagline">Energy, cost &amp; model size</div>
+                        </div>
+
+                        <h3>Efficiency &amp; Energy Use</h3>
+                        <ul>
+                            <li>
+                                Current <strong>electricity consumption</strong> for large AI
+                                workloads is considered unsustainable.
+                            </li>
+                            <li>
+                                There is concern about an <strong>AI bubble</strong> driven
+                                primarily by energy and hardware constraints: we may simply not
+                                be able to produce enough affordable electricity to sustain
+                                unchecked scale-up.
+                            </li>
+                        </ul>
+
+                        <h3>Shift to Smaller Models</h3>
+                        <ul>
+                            <li>
+                                Industry is moving towards <strong>smaller, task-specific
+                                    models and agents</strong>.
+                            </li>
+                            <li>
+                                For many applications (e.g., customer support), we do not need
+                                “Einstein-level” models; simpler models can:
+                                <ul>
+                                    <li>Classify user problems.</li>
+                                    <li>Offer predefined answers or solutions.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                This saves energy and costs but may <strong>slow down radical
+                                    innovation</strong> because resources shift away from very
+                                large research models.
+                            </li>
+                        </ul>
+
+                        <div class="pill-row">
+                            <span class="pill accent">Smaller, cheaper models</span>
+                            <span class="pill">Energy constraints</span>
+                            <span class="pill">AI bubble risk</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. Future of Programming -->
+                <section id="programming-future" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">5</div>
+                                <h2>The Future of Programming &amp; Tool Calling</h2>
+                            </div>
+                            <div class="card-tagline">From code to natural language</div>
+                        </div>
+
+                        <h3>Rising Abstraction Levels</h3>
+                        <ul>
+                            <li>
+                                Software development trends:
+                                <strong>machine code → assembly → high-level languages (e.g., Java)
+                                    → natural language</strong>.
+                            </li>
+                            <li>
+                                As token prices drop, simple functions may be
+                                <strong>implemented directly by an LLM</strong>:
+                                <ul>
+                                    <li>Define function behavior and JSON input/output in a system prompt.</li>
+                                    <li>The LLM becomes the “direct function” executor.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                Developers increasingly act as <strong>business analysts</strong>,
+                                specifying desired outcomes in high-level language.
+                            </li>
+                        </ul>
+
+                        <h3>Tool Calling Protocols</h3>
+                        <ul>
+                            <li>
+                                <strong>MCP (Model–Component Protocol)</strong>:
+                                <ul>
+                                    <li>
+                                        LLM acts as a <strong>smart router</strong>:
+                                        parses user text → extracts parameters → calls predefined APIs.
+                                    </li>
+                                    <li>
+                                        Requires an <strong>MCP server</strong> as a middle layer
+                                        between the agent (LLM) and tools.
+                                    </li>
+                                    <li>
+                                        Tool calling in this style emerged around early 2024.
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>UTCP (Universal Tool Context Protocol)</strong>:
+                                <ul>
+                                    <li>
+                                        Newer protocol (around mid-2025).
+                                    </li>
+                                    <li>
+                                        Interfaces (tools) register <strong>directly with the agent</strong>,
+                                        removing the need for a separate MCP server.
+                                    </li>
+                                    <li>
+                                        Simplifies integrating many tools into an agentic system.
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <div class="pill-row">
+                            <span class="pill accent-2">MCP</span>
+                            <span class="pill accent-2">UTCP</span>
+                            <span class="pill">LLM as function</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. Embeddings & Vector Stores -->
+                <section id="embeddings-vector-stores" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">6</div>
+                                <h2>Embeddings &amp; Vector Stores</h2>
+                            </div>
+                            <div class="card-tagline">Numeric representations &amp; fast lookup</div>
+                        </div>
+
+                        <h3>Embeddings</h3>
+                        <ul>
+                            <li>
+                                <strong>Embeddings</strong> are numeric vectors (often NumPy arrays)
+                                that represent semantic meaning of text, audio, images, etc.
+                            </li>
+                            <li>
+                                They are created by specialized <strong>embedding models</strong>,
+                                often separate from the main LLM used for generation.
+                            </li>
+                            <li>
+                                The <strong>dimensionality</strong> of embeddings must match
+                                the expected input size of the receiving neural network.
+                            </li>
+                        </ul>
+
+                        <h3>Audio Embeddings</h3>
+                        <ul>
+                            <li>
+                                Audio is digitized and split into <strong>fixed-length blocks</strong>.
+                            </li>
+                            <li>
+                                Each block is transformed into an embedding using models such as
+                                <strong>Wave2Vec (WAV2VEC)</strong>, originally from Facebook.
+                            </li>
+                        </ul>
+
+                        <h3>Vector Stores</h3>
+                        <ul>
+                            <li>
+                                <strong>Vector stores</strong> are optimized databases for:
+                                <ul>
+                                    <li>Storing large collections of embedding vectors.</li>
+                                    <li>Performing fast <strong>similarity search</strong> (nearest neighbors).</li>
+                                </ul>
+                            </li>
+                            <li>
+                                Internally, they often use tree-like or graph-based structures
+                                to handle massive amounts of numeric data efficiently.
+                            </li>
+                        </ul>
+
+                        <h3>Common Tools</h3>
+                        <ul>
+                            <li>
+                                <strong>Chroma</strong> and <strong>Faiss</strong>
+                                (Facebook AI Similarity Search):
+                                <ul>
+                                    <li>Popular for local and development work.</li>
+                                    <li>Faiss is in C++ with Python bindings and supports CPU/GPU.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Milvus</strong>:
+                                <ul>
+                                    <li>
+                                        Considered a <strong>de facto production standard</strong>
+                                        for large-scale deployments (banks, Netflix/Facebook–like systems).
+                                    </li>
+                                    <li>
+                                        Supports high scalability, replication, and throughput
+                                        (e.g., ~10,000 queries/sec in a cluster).
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Other options</strong>:
+                                <ul>
+                                    <li>Elasticsearch now supports embeddings but was not built as a pure vector DB.
+                                    </li>
+                                    <li>There are concerns that retrofitted systems may underperform
+                                        specialized vector databases.</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h3>Use Cases: Similarity Search</h3>
+                        <ul>
+                            <li>
+                                <strong>Audio similarity</strong>:
+                                <ul>
+                                    <li>
+                                        Store embeddings of fixed audio blocks in a vector store.
+                                    </li>
+                                    <li>
+                                        Compare new samples to find similar segments
+                                        (e.g., music identification like Shazam).
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Visual Similarity Search (VSS)</strong>:
+                                <ul>
+                                    <li>
+                                        User uploads an image (e.g., an outfit photo).
+                                    </li>
+                                    <li>
+                                        Convert it to an embedding and search for visually similar products
+                                        (color, style, patterns) in an e-commerce catalog.
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <div class="pill-row">
+                            <span class="pill accent">Semantic vectors</span>
+                            <span class="pill accent">Similarity search</span>
+                            <span class="pill">Audio &amp; image search</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. Vector store landscape -->
+                <section id="vector-comparisons" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">7</div>
+                                <h2>Vector Store Landscape &amp; Comparisons</h2>
+                            </div>
+                            <div class="card-tagline">Milvus, Qdrant, Pinecone &amp; others</div>
+                        </div>
+
+                        <h3>Milvus</h3>
+                        <ul>
+                            <li>
+                                Designed for <strong>large-scale, high-throughput</strong> workloads
+                                with <strong>low latency</strong>.
+                            </li>
+                            <li>
+                                Performance scales almost linearly with available CPU resources.
+                            </li>
+                            <li>
+                                Installable locally (stand-alone, on-prem, Docker) and also offered
+                                as a cloud service.
+                            </li>
+                            <li>
+                                Often described as a true “beast” (<em>“zver”</em>) among vector stores.
+                            </li>
+                        </ul>
+
+                        <h3>Qdrant (Quadrant)</h3>
+                        <ul>
+                            <li>
+                                Shows strong performance gains with more <strong>replicas</strong>.
+                            </li>
+                            <li>
+                                Targets <strong>lightweight, focused use cases</strong>
+                                and strong single-query performance.
+                            </li>
+                        </ul>
+
+                        <h3>Pinecone</h3>
+                        <ul>
+                            <li>
+                                Major <strong>proprietary</strong> vector store provider.
+                            </li>
+                            <li>
+                                Server-side is not open source, but clients (e.g., Python) are provided.
+                            </li>
+                        </ul>
+
+                        <h3>Mail Search</h3>
+                        <ul>
+                            <li>
+                                A system of interest; the underlying vector store is not clearly known
+                                (may be proprietary).
+                            </li>
+                            <li>
+                                Likely uses a cloud interface while leveraging native storage
+                                solutions from providers like Google or Amazon.
+                            </li>
+                        </ul>
+
+                        <h3>Other Vector Stores</h3>
+                        <ul>
+                            <li>
+                                <strong>TypeSense</strong>:
+                                Mentioned as an alternative with a similar philosophy
+                                to Milvus in some contexts.
+                            </li>
+                            <li>
+                                <strong>Chroma</strong> &amp; <strong>Faiss</strong>:
+                                Typically smaller-scale, often used locally during development.
+                            </li>
+                        </ul>
+
+                        <h3>Provider Status &amp; Native Solutions</h3>
+                        <ul>
+                            <li>
+                                Amazon AWS is noted as surprisingly lacking a clear
+                                first-party vector DB (instead encouraging users to build
+                                on EC2, or use partner products).
+                            </li>
+                            <li>
+                                Google likely uses custom, internal vector solutions
+                                rather than off-the-shelf systems like Milvus or Pinecone.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 8. Performance & Benchmarks -->
+                <section id="performance" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">8</div>
+                                <h2>Performance &amp; Benchmarks</h2>
+                            </div>
+                            <div class="card-tagline">Throughput, latency &amp; indexing</div>
+                        </div>
+
+                        <ul>
+                            <li>
+                                Example benchmark:
+                                <ul>
+                                    <li>Dataset: <strong>1 million</strong> vectors.</li>
+                                    <li>Vector size: <strong>128 dimensions</strong>.</li>
+                                    <li>Throughput: around <strong>10,000 queries per second</strong>.</li>
+                                    <li>Response time: about <strong>63 ms</strong> (very good).</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Indexing time</strong> is crucial:
+                                <ul>
+                                    <li>
+                                        If a system like Milvus can index a dataset in
+                                        ~30 minutes instead of several hours, that saves
+                                        significant operational time.
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 9. Current Project -->
+                <section id="project-impl" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">9</div>
+                                <h2>Current Project Implementation</h2>
+                            </div>
+                            <div class="card-tagline">Real-world use of embeddings &amp; search</div>
+                        </div>
+
+                        <ul>
+                            <li>
+                                Data sources: <strong>Wikipedia</strong> and
+                                <strong>various medical journals</strong> were indexed.
+                            </li>
+                            <li>
+                                Embeddings used: vectors of size <strong>1536 dimensions</strong>.
+                            </li>
+                            <li>
+                                Stored in a system called <strong>Mail Search (Maily Search)</strong>,
+                                used for similarity search.
+                            </li>
+                            <li>
+                                <strong>Re-indexing is slow</strong>:
+                                reprocessing modified documents currently takes
+                                about <strong>1.5–3 hours</strong>.
+                            </li>
+                            <li>
+                                It is suggested that <strong>Milvus</strong> could optimize
+                                or automate this process to reduce indexing time.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 10. RAG Setup -->
+                <section id="rag-env" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">10</div>
+                                <h2>RAG Setup with LlamaIndex &amp; LLMs</h2>
+                            </div>
+                            <div class="card-tagline">Environment, models &amp; tools</div>
+                        </div>
+
+                        <h3>Core RAG Library</h3>
+                        <ul>
+                            <li>
+                                <strong>LlamaIndex</strong> (sometimes called “Llama Index”)
+                                is a Python framework providing the core functions for
+                                <strong>Retrieval-Augmented Generation (RAG)</strong>.
+                            </li>
+                        </ul>
+
+                        <h3>Local / Cloud Environment</h3>
+                        <ul>
+                            <li>
+                                Example environment: <strong>Google Colab</strong>.
+                                <ul>
+                                    <li>Useful when GPU access is required or local GPUs are unavailable.</li>
+                                    <li>
+                                        Allows running shell commands with a leading
+                                        <code>!</code> in notebooks.
+                                    </li>
+                                    <li>
+                                        Example runtime: <strong>NVIDIA T4 GPU</strong> with
+                                        12–16 GB GPU RAM, limiting model sizes that can be loaded.
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h3>Data Loading</h3>
+                        <ul>
+                            <li>
+                                LlamaIndex provides a <strong>SimpleDirectoryReader</strong>
+                                for reading files from the file system.
+                            </li>
+                            <li>
+                                Example: loading a single PDF file
+                                (e.g., <code>subir secure.pdf</code>) for indexing.
+                            </li>
+                        </ul>
+
+                        <h3>Model Selection</h3>
+                        <ul>
+                            <li>
+                                Primary LLM: e.g., <strong>Llama 2 7B Chat</strong>
+                                (7 billion parameter chat model).
+                            </li>
+                            <li>
+                                Text embedding model: named <strong>GT base</strong> in the example.
+                            </li>
+                            <li>
+                                Ideally, the embedding dimension should match the LLM’s expected input,
+                                though LlamaIndex can sometimes adapt mismatched sizes.
+                            </li>
+                        </ul>
+
+                        <h3>LLM Engines</h3>
+                        <ul>
+                            <li>
+                                <strong>Llama.cpp</strong> used as the model engine:
+                                <ul>
+                                    <li>Forms the basis of tools like <strong>Ollama</strong>.</li>
+                                    <li>Supports CPU and GPU execution.</li>
+                                    <li>
+                                        Can <strong>offload parts of a large model</strong> between
+                                        system RAM and GPU RAM, enabling huge models to run on
+                                        limited GPUs.
+                                    </li>
+                                    <li>
+                                        Pure CPU execution is possible but very slow.
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                LlamaIndex supports many backends:
+                                <strong>OpenAI, Azure, Bedrock</strong> (cloud) and
+                                local engines like <strong>Ollama</strong>, Llama.cpp, LM Studio.
+                            </li>
+                        </ul>
+
+                        <h3>Hugging Face</h3>
+                        <ul>
+                            <li>
+                                Hugging Face hosts LLM models in a way similar to GitHub
+                                for source code.
+                            </li>
+                            <li>
+                                Access may require tokens; best practice is to set these
+                                as <strong>environment variables</strong>.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 11. RAG Architecture -->
+                <section id="rag-architecture" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">11</div>
+                                <h2>RAG Architecture &amp; Retrieval Flow</h2>
+                            </div>
+                            <div class="card-tagline">From documents to grounded answers</div>
+                        </div>
+
+                        <p>
+                            RAG combines <strong>vector search</strong>, <strong>vector storage</strong>,
+                            <strong>reranking</strong>, and an <strong>LLM</strong> to provide
+                            answers grounded in specific documents.
+                        </p>
+
+                        <h3>Data Indexing &amp; Vector Stores</h3>
+                        <ul>
+                            <li>
+                                LlamaIndex normally:
+                                <ul>
+                                    <li>Loads documents from a directory.</li>
+                                    <li>Chunks them and creates embeddings.</li>
+                                    <li>Builds a default vector index locally (CPU-based).</li>
+                                </ul>
+                            </li>
+                            <li>
+                                Indexing <strong>very large directories</strong> (e.g., 10,000+ files)
+                                can overwhelm a single machine.
+                            </li>
+                            <li>
+                                A major advantage: LlamaIndex can use an
+                                <strong>external vector store</strong> (e.g., Milvus, Pinecone).
+                                <ul>
+                                    <li>Documents are vectorized and stored in the external DB.</li>
+                                    <li>LlamaIndex queries the vector store for candidates.</li>
+                                    <li>
+                                        The heavy similarity search work happens in the vector DB,
+                                        not inside LlamaIndex.
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h3>Retrieval &amp; Ranking Phases</h3>
+                        <ol>
+                            <li>
+                                <strong>Question embedding</strong>:
+                                The user’s question is converted into an embedding.
+                            </li>
+                            <li>
+                                <strong>Similarity search</strong>:
+                                The embedding is sent to the vector store (e.g., Milvus),
+                                which performs a similarity search.
+                            </li>
+                            <li>
+                                <strong>Candidate retrieval</strong>:
+                                The store returns a configurable number of candidate chunks
+                                (e.g., 5, 10, 500 paragraphs or snippets).
+                            </li>
+                            <li>
+                                <strong>Reranking / shortlisting</strong>:
+                                <ul>
+                                    <li>
+                                        Additional ranking is applied (vector math or
+                                        agent-based reranking) to transform the long candidate list
+                                        into a short, high-quality context set.
+                                    </li>
+                                    <li>
+                                        Especially important for <strong>non-polar datasets</strong>
+                                        (no clear clusters/boundaries, e.g., general fiction).
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>LLM generation</strong>:
+                                The shortlisted context + question are passed to the LLM,
+                                which generates the final answer, ideally
+                                <strong>strictly grounded in that context</strong>.
+                            </li>
+                        </ol>
+
+                        <div class="pill-row">
+                            <span class="pill accent">Vector search</span>
+                            <span class="pill accent">Reranking</span>
+                            <span class="pill">LLM answer generation</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 12. Context & Cost -->
+                <section id="context-cost" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">12</div>
+                                <h2>LLM Context, Cost &amp; Why RAG Exists</h2>
+                            </div>
+                            <div class="card-tagline">Balancing performance and price</div>
+                        </div>
+
+                        <ul>
+                            <li>
+                                The chosen LLM (e.g., <strong>ChatGPT “5.1” in the notes’ wording</strong>)
+                                is a key factor in RAG performance.
+                            </li>
+                            <li>
+                                <strong>Main reason for RAG</strong>:
+                                sending entire source materials to an LLM is often
+                                <strong>too expensive</strong> (token costs).
+                            </li>
+                            <li>
+                                In theory, a simple RAG system could just pass an entire book
+                                as context; the LLM would answer correctly because all information
+                                is visible. In practice, this is cost-prohibitive.
+                            </li>
+                            <li>
+                                <strong>Agentic RAG systems</strong> can consume many tokens per query.
+                                At large scales (e.g., 10,000 users),
+                                token costs can reach significant levels per thousand queries.
+                            </li>
+                            <li>
+                                Therefore, architects <strong>mix powerful and cheaper models</strong>:
+                                <ul>
+                                    <li>Use high-end models for critical reasoning steps.</li>
+                                    <li>Use smaller models (e.g., “GPT mini”) for simpler tasks
+                                        to control costs.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 13. Prompt Engineering -->
+                <section id="prompt-engineering" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">13</div>
+                                <h2>Prompt Engineering</h2>
+                            </div>
+                            <div class="card-tagline">Model-specific instructions</div>
+                        </div>
+
+                        <ul>
+                            <li>
+                                Each LLM family (and often each specific model) expects a
+                                particular <strong>prompt style / template</strong>.
+                            </li>
+                            <li>
+                                User-facing UIs usually insert the correct system prompt
+                                automatically; the user only sees a free-text query box.
+                            </li>
+                            <li>
+                                Prompts must match what the model was
+                                <strong>trained / fine-tuned on</strong>.
+                            </li>
+                            <li>
+                                If the model receives an unexpected prompt format, it can produce
+                                <strong>“catastrophic nonsense”</strong>.
+                            </li>
+                        </ul>
+
+                        <div class="pill-row">
+                            <span class="pill accent-2">Prompt templates</span>
+                            <span class="pill">System prompts</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 14. LlamaIndex Deployment -->
+                <section id="llama-deployment" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">14</div>
+                                <h2>LlamaIndex Implementation &amp; Deployment</h2>
+                            </div>
+                            <div class="card-tagline">From library to web service</div>
+                        </div>
+
+                        <h3>Engine vs. Server</h3>
+                        <ul>
+                            <li>
+                                LlamaIndex is a <strong>framework / engine</strong>, not a
+                                ready-made web server.
+                            </li>
+                            <li>
+                                It exposes a <strong>query engine</strong> object that
+                                you call from your application code.
+                            </li>
+                            <li>
+                                You must build web wrappers (REST APIs, etc.) yourself.
+                            </li>
+                        </ul>
+
+                        <h3>Typical Deployment Stack</h3>
+                        <ul>
+                            <li>
+                                Use <strong>FastAPI</strong> (Python) to expose LlamaIndex
+                                as HTTP endpoints or WebSocket streams.
+                            </li>
+                            <li>
+                                Implement <strong>streaming responses</strong> so users
+                                see answers appear gradually, as in modern chat UIs.
+                            </li>
+                            <li>
+                                Frontend often uses <strong>WebSockets</strong> to receive
+                                streamed tokens in real-time.
+                            </li>
+                        </ul>
+
+                        <h3>Concurrency &amp; Conversation State</h3>
+                        <ul>
+                            <li>
+                                A single instantiated LLM model object can be
+                                <strong>shared across threads</strong> because each query
+                                doesn’t permanently modify its internal weights.
+                            </li>
+                            <li>
+                                Conversation history (chat transcript) must be
+                                <strong>maintained externally</strong> (e.g., in your app state),
+                                then passed into the query engine.
+                            </li>
+                            <li>
+                                Proper use of RAG means calling the
+                                <strong>LlamaIndex query engine</strong> (which does retrieval),
+                                not the raw LLM alone.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 15. Technical environment -->
+                <section id="tech-environment" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">15</div>
+                                <h2>Technical Environment &amp; Supporting Concepts</h2>
+                            </div>
+                            <div class="card-tagline">Embeddings, Python packaging &amp; scaling</div>
+                        </div>
+
+                        <h3>Embedding &amp; Normalization</h3>
+                        <ul>
+                            <li>
+                                When creating embeddings, you obtain a fixed-size vector
+                                (e.g., 536 dimensions in one example).
+                            </li>
+                            <li>
+                                <strong>MinMaxScaler</strong> from <code>scikit-learn</code>
+                                can normalize features to [0, 1].
+                            </li>
+                        </ul>
+
+                        <h3>PIP vs. Conda (Python Packaging)</h3>
+                        <ul>
+                            <li>
+                                <strong>Conda</strong>:
+                                <ul>
+                                    <li>Uses precompiled binary packages optimized for platforms/CUDA.</li>
+                                    <li>Installation is often just download + unzip → very fast.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>PIP</strong>:
+                                <ul>
+                                    <li>
+                                        For libraries that wrap C / C++ (common in ML, CUDA,
+                                        image processing like OpenCV), PIP may need a
+                                        <strong>C compiler</strong> to compile native code.
+                                    </li>
+                                    <li>
+                                        This can take many minutes on some systems.
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <details>
+                            <summary>PIP vs. Conda – furniture analogy</summary>
+                            <div>
+                                <p>
+                                    The difference between PIP and Conda is like building furniture:
+                                </p>
+                                <ul>
+                                    <li>
+                                        <strong>Conda</strong> hands you a piece of furniture
+                                        <strong>already assembled</strong> and tuned for your home.
+                                    </li>
+                                    <li>
+                                        <strong>PIP</strong> sometimes hands you a box of raw lumber
+                                        and instructions; you must find and use a full tool kit
+                                        (the C compiler) to build the components before you can
+                                        assemble the furniture.
+                                    </li>
+                                </ul>
+                            </div>
+                        </details>
+
+                        <h3>Python Interpretation &amp; Compilation</h3>
+                        <ul>
+                            <li>
+                                Python is an <strong>interpreted</strong> language, but it
+                                compiles source to <strong>bytecode</strong> (<code>.pyc</code> files).
+                            </li>
+                            <li>
+                                If source code changes but stale <code>.pyc</code> files remain,
+                                the app may not reflect changes until those bytecode files
+                                are refreshed or deleted.
+                            </li>
+                        </ul>
+
+                        <h3>Scalability Challenges for RAG</h3>
+                        <ul>
+                            <li>
+                                Building a multi-user RAG search service (e.g., for client document
+                                archives) requires:
+                                <ul>
+                                    <li>Exposing LlamaIndex via a web API (e.g., FastAPI).</li>
+                                    <li>
+                                        Handling <strong>real-time indexing</strong> of
+                                        large numbers of documents from many users concurrently.
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                This ingestion + indexing pipeline is a major
+                                <strong>architectural challenge</strong>.
+                            </li>
+                            <li>
+                                Note: <strong>Sentiment analysis</strong> is a different
+                                problem domain and not inherently solved by RAG.
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- 16. Future Plans & Use Cases -->
+                <section id="future-plans" class="card">
+                    <div class="card-inner">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="badge">16</div>
+                                <h2>Future Directions &amp; Use Cases</h2>
+                            </div>
+                            <div class="card-tagline">Visual search &amp; agents</div>
+                        </div>
+
+                        <ul>
+                            <li>
+                                Complete the current RAG example and run a full demonstration
+                                using the example PDF.
+                            </li>
+                            <li>
+                                Explore <strong>visual search</strong> more deeply
+                                (image-based retrieval).
+                            </li>
+                            <li>
+                                Define additional use cases for the RAG + vector-store system.
+                            </li>
+                            <li>
+                                Transition into <strong>agents</strong> that combine all learned concepts:
+                                <ul>
+                                    <li>
+                                        Example: a social media posting agent for Instagram,
+                                        with a <strong>human-in-the-loop</strong>:
+                                        the agent proposes content and waits for human approval.
+                                    </li>
+                                    <li>
+                                        Analyze a PDF of requirements (e.g., for a school or
+                                        professor “Rastika”) and implement an agentic system
+                                        that satisfies those requirements.
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <div class="pill-row">
+                            <span class="pill accent">Agents</span>
+                            <span class="pill">Human-in-the-loop</span>
+                            <span class="pill">Visual search</span>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>
