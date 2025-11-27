@@ -1,0 +1,11 @@
+
+In colab below install: !pip install faiss-gpu-cu12 instead of faiss-gpu:
+https://colab.research.google.com/gist/Lihi-Gur-Arie/7cac63dbffde55449d2444e402d87bfc/image_search_engine_by_lihi_gur_arie.ipynb#scrollTo=Vb1viBmxtVRq
+
+https://github.com/openai/CLIP
+
+https://github.com/facebookresearch/sam3/tree/main
+
+https://colab.research.google.com/github/milvus-io/bootcamp/blob/master/integration/llamaindex/rag_with_milvus_and_llamaindex.ipynb#scrollTo=8d641e24
+
+https://medium.com/@shravankoninti/build-a-small-language-model-slm-from-scratch-3ddd13fa6470

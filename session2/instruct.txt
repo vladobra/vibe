@@ -2,9 +2,5 @@
 
 https://colab.research.google.com/github/kazcfz/LlamaIndex-RAG/blob/main/LlamaIndex_RAG.ipynb#scrollTo=jyKYb-BSVg3z
 
-In colab below install: !pip install faiss-gpu-cu12 instead of faiss-gpu:
-https://colab.research.google.com/gist/Lihi-Gur-Arie/7cac63dbffde55449d2444e402d87bfc/image_search_engine_by_lihi_gur_arie.ipynb#scrollTo=Vb1viBmxtVRq
-
-https://github.com/openai/CLIP
 
 https://github.com/cobanov/audio-embedding

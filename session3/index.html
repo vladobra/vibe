@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>{{ page.title | default: "RAG, Vector Stores & Multimodal AI – Study Notes" }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        :root {
+            --bg: #020617;
+            --card-bg: #020617;
+            --card-border: #1e293b;
+            --accent: #38bdf8;
+            --accent-2: #a855f7;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --text-strong: #f9fafb;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        header.hero {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr);
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            header.hero {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .hero-main h1 {
+            font-size: clamp(2rem, 3vw, 2.4rem);
+            margin: 0 0 8px;
+            color: var(--text-strong);
+            letter-spacing: -0.03em;
+        }
+
+        .hero-main p {
+            margin: 0 0 12px;
+            color: var(--text-muted);
+            max-width: 40rem;
+        }
+
+        .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .hero-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .hero-panel {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 14px 14px 16px;
+        }
+
+        .hero-panel h2 {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .hero-panel p {
+            margin: 0;
+            font-size: 0.86rem;
+            color: var(--text-muted);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 2.2fr);
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        @media (max-width: 960px) {
+            .layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .toc {
+            position: sticky;
+            top: 16px;
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 12px 12px 10px;
+            font-size: 0.8rem;
+        }
+
+        .toc h2 {
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+            color: var(--text-muted);
+        }
+
+        .toc ol {
+            list-style: none;
+            margin: 0;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 2px 0;
+        }
+
+        .toc a {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+        }
+
+        .toc a:hover {
+            background: rgba(51, 65, 85, 0.75);
+            color: var(--text-strong);
+            transform: translateX(2px);
+        }
+
+        main.notes {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        section.card {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--card-border);
+            padding: 14px 14px 12px;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+
+        .card-title h2 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-strong);
+            letter-spacing: -0.01em;
+        }
+
+        .card-tagline {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        h3 {
+            margin: 8px 0 3px;
+            font-size: 0.9rem;
+            color: var(--accent-2);
+        }
+
+        p {
+            margin: 2px 0 6px;
+            font-size: 0.84rem;
+        }
+
+        ul,
+        ol {
+            margin: 4px 0 6px 1rem;
+            padding-left: 0.9rem;
+            font-size: 0.84rem;
+        }
+
+        li+li {
+            margin-top: 2px;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 4px 0 2px;
+        }
+
+        .pill {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-muted);
+        }
+
+        .pill.accent {
+            border-color: rgba(56, 189, 248, 0.8);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .pill.accent-2 {
+            border-color: rgba(168, 85, 247, 0.8);
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        details {
+            margin-top: 6px;
+            border-radius: var(--radius-md);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            padding: 7px 9px;
+            font-size: 0.8rem;
+        }
+
+        details summary {
+            list-style: none;
+            cursor: pointer;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary::after {
+            content: "▼";
+            font-size: 0.7rem;
+            opacity: 0.7;
+            transition: transform 0.15s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(-180deg);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- HERO -->
+        <header class="hero">
+            <div class="hero-main">
+                <h1>čas 3 - 27.11.2025 - "RAG, Vector Stores & Multimodal AI – Study Notes"</h1>
+                <p>
+                    "End-to-end notes on RAG, vector databases, CLIP, image search, and
+                    multimodal computer vision applications."
+                </p>
+                <div class="hero-badges">
+                    <span class="hero-badge">RAG &amp; Vector Stores</span>
+                    <span class="hero-badge">Image &amp; Multimodal Search</span>
+                    <span class="hero-badge">Computer Vision &amp; Strategy</span>
+                </div>
+            </div>
+
+            <aside class="hero-panel">
+                <h2>Learning Map</h2>
+                <p>
+                    Start with course tooling and classic RAG, then move into vector search, image similarity with CLIP
+                    &amp; FAISS, advanced vision models (SAM, YOLO), and finally real-world use cases and career
+                    strategy.
+                </p>
+            </aside>
+        </header>
+
+        <!-- LAYOUT -->
+        <div class="layout">
+
+            <!-- TOC -->
+            <nav class="toc">
+                <h2>Contents</h2>
+                <ol>
+                    <li><a href="#section-1">1. Course Materials &amp; Setup</a></li>
+                    <li><a href="#section-2">2. Review: LLMs, Inference &amp; Prompts</a></li>
+                    <li><a href="#section-3">3. Vector Stores &amp; Milvus Lite</a></li>
+                    <li><a href="#section-4">4. RAG Demo with Milvus Lite</a></li>
+                    <li><a href="#section-5">5. Image Similarity Search (CLIP &amp; FAISS)</a></li>
+                    <li><a href="#section-6">6. Multimodal Models &amp; Embeddings</a></li>
+                    <li><a href="#section-7">7. Advanced CV: SAM, YOLO &amp; Tracking</a></li>
+                    <li><a href="#section-8">8. Practical Applications &amp; Use Cases</a></li>
+                    <li><a href="#section-9">9. Strategy &amp; Learning Path</a></li>
+                    <li><a href="#section-10">10. Key Analogies</a></li>
+                </ol>
+            </nav>
+
+            <!-- MAIN NOTES -->
+            <main class="notes">
+
+                <!-- SECTION 1 -->
+                <section id="section-1" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">1</div>
+                            <h2>Course Materials &amp; Setup</h2>
+                        </div>
+                        <div class="card-tagline">
+                            How content, code, and core reading are organized.
+                        </div>
+                    </div>
+
+                    <h3>Resources &amp; AI-Generated Notes</h3>
+                    <ul>
+                        <li>After each class, code and materials are pushed to GitHub; students should regularly pull
+                            updates.</li>
+                        <li>Lecture notes, transcriptions, and summaries are explicitly generated using AI tools.</li>
+                    </ul>
+
+                    <h3>Key Reading: Transformers &amp; GPT Architecture</h3>
+                    <ul>
+                        <li>A highly recommended Medium article explains the internal structure of GPT models based on
+                            Transformers.</li>
+                        <li>The article is treated as:
+                            <ul>
+                                <li>A serious, almost “PhD-level” achievement for dedicated students.</li>
+                                <li>A primer (“bukvar”) for anyone who wants a career in LLMs and deep learning.</li>
+                            </ul>
+                        </li>
+                        <li>The article includes executable code and covers:
+                            <ul>
+                                <li>Matrix operations for forward passes.</li>
+                                <li>Transformer block internals (multi-head attention, feed-forward, etc.).</li>
+                                <li>PyTorch components such as <code>nn.Module</code> and <code>torch</code> tensors.
+                                </li>
+                                <li>Design elements: embeddings, dropout, layer normalization.</li>
+                                <li>Configuration of a GPT block and model wiring.</li>
+                            </ul>
+                        </li>
+                        <li>Even if data scientists usually design these networks, understanding this article and its
+                            code is considered foundational.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">GitHub Workflow</span>
+                        <span class="pill accent-2">Transformers</span>
+                        <span class="pill">GPT Architecture</span>
+                        <span class="pill">PyTorch nn.Module</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 2 -->
+                <section id="section-2" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">2</div>
+                            <h2>Review: LLMs, Inference &amp; Prompts</h2>
+                        </div>
+                        <div class="card-tagline">
+                            From simple RAG with LlamaIndex to raw prompt templates.
+                        </div>
+                    </div>
+
+                    <h3>LlamaIndex &amp; Basic RAG</h3>
+                    <ul>
+                        <li>A previous Google Colab notebook demonstrated a minimal Retrieval-Augmented Generation (RAG)
+                            flow using LlamaIndex components.</li>
+                        <li>The demo loop could:
+                            <ul>
+                                <li>Call the LLM directly for free-form chat.</li>
+                                <li>Call a query engine implementing the most primitive RAG (retrieve, then generate).
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Raw Prompt (R-Prompt) Structure</h3>
+                    <ul>
+                        <li>The “Raw Prompt” is the full underlying instruction template a model like ChatGPT uses
+                            internally.</li>
+                        <li>It is usually hidden from end users but becomes visible when:
+                            <ul>
+                                <li>Talking directly to a model via low-level APIs.</li>
+                                <li>Using lower-level libraries like Llama.cpp.</li>
+                            </ul>
+                        </li>
+                        <li>High-level SDKs (e.g., OpenAI Python client) abstract this away and expose only:
+                            <ul>
+                                <li>System prompt.</li>
+                                <li>User messages.</li>
+                                <li>Conversation history.</li>
+                            </ul>
+                        </li>
+                        <li>The exact raw prompt structure is dictated by how the model was trained and fine-tuned.</li>
+                    </ul>
+
+                    <h3>Local Inference &amp; Model-Specific Templates</h3>
+                    <ul>
+                        <li>The earlier example used Llama.cpp for local CPU-only inference (no GPU).</li>
+                        <li>Each model family expects its own specific prompt template, e.g.:
+                            <ul>
+                                <li>Alpaca</li>
+                                <li>LLaMA</li>
+                                <li>Microsoft Phi</li>
+                                <li>Gemma</li>
+                            </ul>
+                        </li>
+                        <li>Tools like Ollama or OpenAI’s API automatically handle correct prompt formatting.</li>
+                        <li>When using Llama.cpp directly, you must manually construct the exact prompt format required
+                            by the chosen model.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">LlamaIndex</span>
+                        <span class="pill accent-2">RAG Basics</span>
+                        <span class="pill">Raw Prompt</span>
+                        <span class="pill">Llama.cpp</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 3 -->
+                <section id="section-3" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">3</div>
+                            <h2>Vector Stores &amp; Milvus Lite</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Why we need vector databases and how Milvus Lite fits in.
+                        </div>
+                    </div>
+
+                    <h3>Introducing Milvus Lite</h3>
+                    <ul>
+                        <li>The demo uses Milvus Lite (accessed via PyMilvus), a simplified open-source version of
+                            Milvus.</li>
+                        <li>Milvus Lite is:
+                            <ul>
+                                <li>Designed for local development, demos, and small projects.</li>
+                                <li>A single-file, on-disk vector store (similar in spirit to SQLite for relational
+                                    data).</li>
+                                <li>Free from the complexity of distributed clusters, nodes, and synchronization.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Functions of a Vector Store</h3>
+                    <ul>
+                        <li>Main goal: store embeddings so they don’t have to be recomputed for each query.</li>
+                        <li>Two core responsibilities:
+                            <ul>
+                                <li><strong>Storage / Indexing</strong> – build indices over embedding vectors.</li>
+                                <li><strong>Fast Similarity Search</strong> – quickly find nearest neighbors to a query
+                                    vector.</li>
+                            </ul>
+                        </li>
+                        <li>Similarity search is purely mathematical:
+                            <ul>
+                                <li>Measures distance (e.g., cosine, Euclidean) between vectors.</li>
+                                <li>Returns the most similar items for a given query vector.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Use Cases Beyond Classic RAG</h3>
+                    <ul>
+                        <li>Vector databases are useful for any high-dimensional data where:
+                            <ul>
+                                <li>Each data point is represented as a vector.</li>
+                                <li>You want to find points most similar to a target vector.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Example Use Cases</h3>
+                    <ul>
+                        <li><strong>Marketing / Sales</strong>
+                            <ul>
+                                <li>A customer persona (age, interests, hobbies, status, etc.) is turned into a vector.
+                                </li>
+                                <li>Millions of customer vectors can be stored.</li>
+                                <li>Similarity search instantly finds customers closest to a target campaign profile.
+                                </li>
+                                <li>Vector DBs like Milvus can handle millions of records and thousands of queries per
+                                    second.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Long-Term Indexing for RAG</strong>
+                            <ul>
+                                <li>In RAG, the vector store is the long-term index of your documents.</li>
+                                <li>Queries hit this index to retrieve the most relevant passages for the LLM.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Geographic Data</strong>
+                            <ul>
+                                <li>Geographic coordinates are 2D vectors; simple proximity search can be handled by
+                                    SQL.</li>
+                                <li>Vector DBs shine when many dimensions are combined (altitude, category, ratings,
+                                    etc.).</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Milvus Lite</span>
+                        <span class="pill accent-2">Similarity Search</span>
+                        <span class="pill">High-Dimensional Data</span>
+                        <span class="pill">Marketing Personas</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 4 -->
+                <section id="section-4" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">4</div>
+                            <h2>RAG Demo with Milvus Lite</h2>
+                        </div>
+                        <div class="card-tagline">
+                            From raw documents to a persistent similarity index.
+                        </div>
+                    </div>
+
+                    <h3>Setup &amp; Data Loading</h3>
+                    <ul>
+                        <li>Create an API key (e.g., for a test agent).
+                            <ul>
+                                <li>In the demo it was hardcoded, but best practice is to store keys in environment
+                                    variables or secret managers.</li>
+                            </ul>
+                        </li>
+                        <li>Documents used:
+                            <ul>
+                                <li>A classic “Hello World” essay by Paul Graham.</li>
+                                <li>Reports on Uber’s business operations.</li>
+                            </ul>
+                        </li>
+                        <li>Documents are loaded from disk using a <code>SimpleDirectoryReader</code>-like utility.
+                            <ul>
+                                <li>At this stage, documents are only loaded, not yet indexed.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Indexing Process</h3>
+                    <ul>
+                        <li>Instantiate a Milvus Lite vector store with a fixed embedding dimension (e.g., 1536).</li>
+                        <li>Create a storage context and build the index by combining:
+                            <ul>
+                                <li>The documents (text chunks).</li>
+                                <li>The Milvus-backed vector store.</li>
+                            </ul>
+                        </li>
+                        <li>This writes a local file such as <code>milvus_demo.db</code>.</li>
+                        <li>Indexing includes:
+                            <ul>
+                                <li>Computing embeddings for all chunks.</li>
+                                <li>Inserting them into the Milvus index.</li>
+                            </ul>
+                        </li>
+                        <li>Indexing is CPU-intensive and often the most expensive step in the RAG pipeline.</li>
+                        <li>It can be significantly accelerated with a GPU because the operations are mostly linear
+                            algebra.</li>
+                        <li>Because it’s expensive, the index should be persisted immediately:
+                            <ul>
+                                <li>Save the index to disk after building.</li>
+                                <li>Future runs only need to load it into RAM, which is very fast.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Querying &amp; Filtering</h3>
+                    <ul>
+                        <li>Instantiate a query engine from the built index.</li>
+                        <li>Send user queries to the query engine:
+                            <ul>
+                                <li>The engine retrieves top-k similar chunks via vector search.</li>
+                                <li>The retrieved context can then be fed to an LLM.</li>
+                            </ul>
+                        </li>
+                        <li>Use metadata filters for extra control:
+                            <ul>
+                                <li>Filter by <code>file_name</code>, size, or other fields.</li>
+                                <li>Combine metadata filters (SQL-like) with similarity search for precise retrieval.
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Indexing</span>
+                        <span class="pill accent-2">Embedding Dimension 1536</span>
+                        <span class="pill">Metadata Filters</span>
+                        <span class="pill">GPU Acceleration</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 5 -->
+                <section id="section-5" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">5</div>
+                            <h2>Image Similarity Search (CLIP &amp; FAISS)</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Searching images by meaning using multimodal embeddings.
+                        </div>
+                    </div>
+
+                    <p>
+                        The second part of the lesson introduces image processing and similarity search using CLIP and
+                        FAISS, with optional GPU acceleration (CUDA 12).
+                    </p>
+
+                    <h3>The CLIP Model</h3>
+                    <ul>
+                        <li>CLIP (Contrastive Language–Image Pre-training) is an OpenAI multimodal model, revolutionary
+                            when released.</li>
+                        <li>Functionality:
+                            <ul>
+                                <li>Given an image and a text description, it estimates how well they match.</li>
+                                <li>Enables “search by text over images” (e.g., find all images of a “red Peugeot”).
+                                </li>
+                            </ul>
+                        </li>
+                        <li>CLIP is used here to generate image embeddings that live in the same space as text
+                            embeddings.</li>
+                        <li>The model is loaded via the <strong>SentenceTransformers</strong> library.</li>
+                        <li>Model choice matters:
+                            <ul>
+                                <li>We need models explicitly trained for image embeddings.</li>
+                                <li>Text-only models (BERT, ALBERT, T5, etc.) are not suitable.</li>
+                                <li>CLIP is the de facto standard for this kind of multimodal image-text embedding.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Image Indexing &amp; Storage</h3>
+                    <ul>
+                        <li>Select a random sample of images (e.g., 10 images) from a folder.</li>
+                        <li>Load images using PIL:
+                            <ul>
+                                <li><code>from PIL import Image</code></li>
+                                <li><code>image = Image.open(path)</code></li>
+                            </ul>
+                        </li>
+                        <li>Compute the embedding:
+                            <ul>
+                                <li><code>embedding = model.encode(image)</code></li>
+                            </ul>
+                        </li>
+                        <li>Use <strong>FAISS</strong> (Facebook AI Similarity Search) as the vector store:
+                            <ul>
+                                <li>Create a FAISS index with the chosen metric (e.g., cosine similarity).</li>
+                                <li>Insert all image embeddings into the index.</li>
+                                <li>Save the FAISS index to disk for fast reload later.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Querying for Similar Images</h3>
+                    <ul>
+                        <li>A function like <code>retrieve_similar_images</code> handles:
+                            <ul>
+                                <li>Preprocessing the query (text or image).</li>
+                                <li>Embedding the query with the same CLIP model.</li>
+                                <li>Querying FAISS for nearest neighbors.</li>
+                            </ul>
+                        </li>
+                        <li>Query input can be:
+                            <ul>
+                                <li><strong>Text</strong> – if there is no file extension in the query string.</li>
+                                <li><strong>Image</strong> – if the query looks like a file path (extension present).
+                                </li>
+                            </ul>
+                        </li>
+                        <li>CLIP is the “magic” that enables:
+                            <ul>
+                                <li>Text-to-image comparison.</li>
+                                <li>Image-to-image comparison.</li>
+                                <li>All via a shared embedding space.</li>
+                            </ul>
+                        </li>
+                        <li>Internally, CLIP uses:
+                            <ul>
+                                <li>One encoder for text.</li>
+                                <li>Another encoder for images.</li>
+                                <li>Both map into a common vector space trained so that matching text–image pairs end up
+                                    close together.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">CLIP</span>
+                        <span class="pill accent-2">FAISS</span>
+                        <span class="pill">SentenceTransformers</span>
+                        <span class="pill">Image Embeddings</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 6 -->
+                <section id="section-6" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">6</div>
+                            <h2>Multimodal Models &amp; Embeddings</h2>
+                        </div>
+                        <div class="card-tagline">
+                            How CLIP and similar models turn concepts into shared vectors.
+                        </div>
+                    </div>
+
+                    <h3>CLIP as a Multimodal Model</h3>
+                    <ul>
+                        <li>CLIP works with different embedding sizes; many examples use 512–1536 dimensions.</li>
+                        <li>Training data:
+                            <ul>
+                                <li>Image–text pairs, historically including datasets like Flickr.</li>
+                                <li>The model learns which caption matches which image.</li>
+                            </ul>
+                        </li>
+                        <li>Output: <strong>embeddings</strong> that represent concepts rather than raw pixels or words.
+                        </li>
+                    </ul>
+
+                    <h3>Concept Representation</h3>
+                    <ul>
+                        <li>Think of an embedding as a “thought vector” capturing the underlying idea.</li>
+                        <li>The concept “dog” can be triggered by:
+                            <ul>
+                                <li>Hearing barking (audio).</li>
+                                <li>Reading the word “dog” (text).</li>
+                                <li>Seeing a picture of a dog (image).</li>
+                            </ul>
+                        </li>
+                        <li>Multimodal models learn to map all these stimuli to similar vectors for the same concept.
+                        </li>
+                        <li>Because embeddings are concept-level:
+                            <ul>
+                                <li>A model trained on physics texts in English and poetry in Japanese can answer
+                                    physics questions in Japanese.</li>
+                                <li>The model connects concepts and languages in one shared vector space.</li>
+                            </ul>
+                        </li>
+                        <li>Regardless of input type (image, text, audio), the result is treated as one unified “idea
+                            vector.”</li>
+                    </ul>
+
+                    <h3>Retrieval &amp; Vector Search</h3>
+                    <ul>
+                        <li>Queries can be:
+                            <ul>
+                                <li>Text (e.g., “red dress with floral pattern”).</li>
+                                <li>Images loaded and converted with Python libs (e.g., PIL).</li>
+                            </ul>
+                        </li>
+                        <li>Both query types are converted to embeddings by the same or compatible models.</li>
+                        <li>Search is then performed as a vector similarity query:
+                            <ul>
+                                <li>Compute distance between query embedding and indexed embeddings.</li>
+                                <li>Return the closest matches.</li>
+                            </ul>
+                        </li>
+                        <li>Small numerical differences in distance can be meaningful and change ranking.</li>
+                        <li>The model may prioritize some features more than others:
+                            <ul>
+                                <li>For example, the concept “flower” might be treated as more important than the color
+                                    “pink.”</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Multimodal Embeddings</span>
+                        <span class="pill accent-2">Concept Space</span>
+                        <span class="pill">Vector Search</span>
+                        <span class="pill">Cross-Lingual Reasoning</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 7 -->
+                <section id="section-7" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">7</div>
+                            <h2>Advanced Computer Vision: SAM, YOLO &amp; Tracking</h2>
+                        </div>
+                        <div class="card-tagline">
+                            From perfect segmentation to robust object tracking.
+                        </div>
+                    </div>
+
+                    <h3>Segment Anything Model (SAM)</h3>
+                    <ul>
+                        <li>Purpose: SAM performs segmentation – extracting the subject or object of interest from an
+                            image or video frame.</li>
+                        <li>It outputs a <strong>segmentation mask</strong>:
+                            <ul>
+                                <li>A black-and-white mask indicating which pixels belong to the object of interest.
+                                </li>
+                                <li>When XOR-ed (or multiplied) with the original image, only the masked content
+                                    remains; everything else becomes background.</li>
+                            </ul>
+                        </li>
+                        <li>This yields a 100% focus on the object while removing the background.</li>
+                        <li>Applications:
+                            <ul>
+                                <li>Perfect segmentation of moving objects in video.</li>
+                                <li>Feeding the isolated object to multimodal models (GPT, CLIP) for analysis:
+                                    <ul>
+                                        <li>“Is this player committing a foul?”</li>
+                                        <li>“Is this person running or walking?”</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Object Detection &amp; Tracking</h3>
+                    <ul>
+                        <li>Terminology:
+                            <ul>
+                                <li><strong>Object detection</strong> – find and localize objects in each frame.</li>
+                                <li><strong>Tracking</strong> – follow the same object across frames.</li>
+                                <li><strong>Person re-identification</strong> – recognize the same person across
+                                    different cameras or scenes.</li>
+                            </ul>
+                        </li>
+                        <li><strong>YOLO (You Only Look Once)</strong>:
+                            <ul>
+                                <li>A very robust and fast model family for real-time object detection.</li>
+                                <li>Often used as the backbone for tracking pipelines.</li>
+                            </ul>
+                        </li>
+                        <li>Typical pipeline (e.g., tracking basketball players):
+                            <ul>
+                                <li>YOLO detects and tracks each player, assigning a temporary ID.</li>
+                                <li>A separate similarity search or face recognition system identifies <em>who</em> that
+                                    player is.</li>
+                                <li>The combination allows both spatial tracking and identity resolution.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">SAM</span>
+                        <span class="pill accent-2">YOLO</span>
+                        <span class="pill">Segmentation</span>
+                        <span class="pill">Object Tracking</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 8 -->
+                <section id="section-8" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">8</div>
+                            <h2>Practical Applications &amp; Use Cases</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Visual search, smart retail, video indexing, and smart shelves.
+                        </div>
+                    </div>
+
+                    <h3>Visual Search &amp; E‑Commerce</h3>
+                    <ul>
+                        <li><strong>Visual search</strong>:
+                            <ul>
+                                <li>User uploads or takes a picture (e.g., their outfit).</li>
+                                <li>System finds visually similar items in an e‑commerce catalog.</li>
+                            </ul>
+                        </li>
+                        <li>Technical side is mature:
+                            <ul>
+                                <li>Similarity search can be very fast and accurate.</li>
+                            </ul>
+                        </li>
+                        <li>Biggest challenge is often business/product fit:
+                            <ul>
+                                <li>Most of the market (~99%) still relies primarily on text search.</li>
+                            </ul>
+                        </li>
+                        <li>Recommendation engines:
+                            <ul>
+                                <li>Similarity search can be combined with metadata and text.</li>
+                                <li>Large platforms (e.g., Amazon) use more than just image similarity:
+                                    <ul>
+                                        <li>Descriptions, reviews, categories, click history, etc.</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Decoupling in Physical Retail (“Smart Supermarket”)</h3>
+                    <ul>
+                        <li>Use case: build a recommendation engine inside a physical supermarket.</li>
+                        <li>Workflow:
+                            <ul>
+                                <li>Customer takes a picture of a product (e.g., “Vegeta”).</li>
+                                <li>System runs similarity search against a database of product images.</li>
+                                <li>Once the product is identified, it retrieves:
+                                    <ul>
+                                        <li>Nutrition information.</li>
+                                        <li>Recipes.</li>
+                                        <li>Complementary product suggestions.</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>This creates a bridge between the physical item and digital knowledge via an image.</li>
+                    </ul>
+
+                    <h3>Video Processing &amp; Search</h3>
+                    <ul>
+                        <li>To enable search over video:
+                            <ul>
+                                <li>Break the video into individual frames (e.g., 24 fps).</li>
+                                <li>For efficiency, index only a subset (e.g., 3 frames per second).</li>
+                            </ul>
+                        </li>
+                        <li>Each selected frame is:
+                            <ul>
+                                <li>Embedded with a model like CLIP.</li>
+                                <li>Stored in a vector index.</li>
+                            </ul>
+                        </li>
+                        <li>When searching:
+                            <ul>
+                                <li>Convert the query (text or image) into an embedding.</li>
+                                <li>Run similarity search over frame embeddings.</li>
+                                <li>Return timestamps or segments from the original videos.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Smart Shelf (Historical Project)</h3>
+                    <ul>
+                        <li>Project: build a “smart shelf” inspired by Google’s laser projection tech.</li>
+                        <li>Goal:
+                            <ul>
+                                <li>Automatically recognize products placed on a shelf (e.g., a jar of Eurocrem) using a
+                                    camera.</li>
+                                <li>Project promotional or informational content onto the wall next to the item.</li>
+                            </ul>
+                        </li>
+                        <li>Original implementation:
+                            <ul>
+                                <li>Used complex models like YOLO for detection.</li>
+                                <li>Used ArUco codes for coordinate and pose identification.</li>
+                            </ul>
+                        </li>
+                        <li>Modern view:
+                            <ul>
+                                <li>Similarity search plus image embeddings would now solve the recognition part more
+                                    simply and robustly.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Visual Search</span>
+                        <span class="pill accent-2">Smart Retail</span>
+                        <span class="pill">Video Indexing</span>
+                        <span class="pill">Recommendation Engines</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 9 -->
+                <section id="section-9" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">9</div>
+                            <h2>Strategy &amp; Learning Path</h2>
+                        </div>
+                        <div class="card-tagline">
+                            How to learn efficiently and position yourself in the AI wave.
+                        </div>
+                    </div>
+
+                    <h3>Focus &amp; Simple Experiments</h3>
+                    <ul>
+                        <li>Keep learning focused with small, concrete examples.</li>
+                        <li>Suggested exercise:
+                            <ul>
+                                <li>Download a dataset of ~10,000 images.</li>
+                                <li>Build an embedding + vector search pipeline.</li>
+                                <li>Observe performance and bottlenecks.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Treat Models as a Black Box When Needed</h3>
+                    <ul>
+                        <li>Neural networks can be decomposed to math, but the complexity is huge.</li>
+                        <li>For many engineering tasks, it’s enough to:
+                            <ul>
+                                <li>Understand inputs and outputs.</li>
+                                <li>Know that the model returns a “concept vector” (embedding).</li>
+                                <li>Treat the internal details as a black box initially.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Industry Trends</h3>
+                    <ul>
+                        <li>The IT industry is in a phase of “mass hysteria” around AI.</li>
+                        <li>Classic programming roles may shrink or transform.</li>
+                        <li>AI literacy is becoming necessary to:
+                            <ul>
+                                <li>Win contracts.</li>
+                                <li>Stay competitive in high-paying roles.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Defining Your Personal Goal</h3>
+                    <ul>
+                        <li>Key question: <em>“What is the end game for me?”</em></li>
+                        <li>Potential paths:
+                            <ul>
+                                <li>Build a new AI-powered product or startup.</li>
+                                <li>Become a highly paid consultant guiding companies through AI transformation.</li>
+                                <li>Be a specialized engineer (e.g., in computer vision or conversational agents).</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Learning Strategy</h3>
+                    <ul>
+                        <li>Two broad approaches:
+                            <ul>
+                                <li><strong>Generalist</strong> – like a seasonal worker catching many kinds of fish:
+                                    <ul>
+                                        <li>Cover multiple AI subfields at a high level.</li>
+                                        <li>Good for leadership, consulting, or product roles.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Specialist</strong> – focus on a niche (e.g., computer vision only, or
+                                    chatbots only):
+                                    <ul>
+                                        <li>Can lead to deep expertise and high value.</li>
+                                        <li>Risky because subfields can change rapidly.</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Recommended path:
+                            <ul>
+                                <li>Start with strong fundamentals (courses, core reading, coding basics).</li>
+                                <li>Move quickly into hands-on projects and real datasets.</li>
+                                <li>Continuously update skills as the field evolves.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Learning Path</span>
+                        <span class="pill accent-2">Career Strategy</span>
+                        <span class="pill">Generalist vs Specialist</span>
+                        <span class="pill">Hands-on Projects</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 10 -->
+                <section id="section-10" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">10</div>
+                            <h2>Key Analogies</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Intuitive mental models for vector stores and multimodal embeddings.
+                        </div>
+                    </div>
+
+                    <h3>Vector Store Analogy</h3>
+                    <p>
+                        A vector store is like a massive, highly specialized library catalog. Instead of organizing
+                        books by title or author, it organizes them by the <strong>meaning</strong> inside them.
+                    </p>
+                    <ul>
+                        <li>Each book (or document, image, customer) gets a vector that encodes its “conceptual
+                            fingerprint.”</li>
+                        <li>When you submit a query:
+                            <ul>
+                                <li>The system converts your query to a vector.</li>
+                                <li>It doesn’t match keywords; instead, it measures conceptual distance to every item.
+                                </li>
+                                <li>It returns the 10 closest conceptual matches almost instantly.</li>
+                            </ul>
+                        </li>
+                        <li>This works equally well for customer demographics, text documents, or images because they
+                            are all just vectors in the same high-dimensional space.</li>
+                    </ul>
+
+                    <h3>Multimodal Embedding Analogy</h3>
+                    <p>
+                        A multimodal embedding is like creating a universal library card for every possible input
+                        related to a concept.
+                    </p>
+                    <ul>
+                        <li>Example: the idea of an “apple”:
+                            <ul>
+                                <li>A photo of an apple.</li>
+                                <li>The word “apple.”</li>
+                                <li>The sound of someone biting into an apple.</li>
+                            </ul>
+                        </li>
+                        <li>Instead of storing pixels, letters, or audio waves, the system:
+                            <ul>
+                                <li>Creates one standardized entry card that stands for the <strong>idea</strong> of
+                                    “apple.”</li>
+                            </ul>
+                        </li>
+                        <li>When you search for “red fruit”:
+                            <ul>
+                                <li>The system looks for entry cards whose concept is closest to “red fruit.”</li>
+                                <li>It doesn’t care whether those cards came from text or images.</li>
+                            </ul>
+                        </li>
+                        <li>This is how multimodal models connect different modalities in one shared conceptual space.
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Conceptual Fingerprint</span>
+                        <span class="pill accent-2">Universal Card</span>
+                        <span class="pill">High-Dimensional Space</span>
+                        <span class="pill">Intuition</span>
+                    </div>
+
+                    <details>
+                        <summary>How to use these analogies when learning</summary>
+                        <div>
+                            <ul>
+                                <li>When you hear “embedding,” think “concept card” or “fingerprint,” not raw text or
+                                    pixels.</li>
+                                <li>When you hear “vector store,” think “library catalog for concepts,” not just a
+                                    database of rows and columns.</li>
+                                <li>Use these mental models to explain AI systems to non-technical stakeholders.</li>
+                            </ul>
+                        </div>
+                    </details>
+                </section>
+
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>
