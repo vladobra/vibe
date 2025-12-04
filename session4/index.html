@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>RAG with LlamaIndex, LLM Costs, and CrewAI – Study Notes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        :root {
+            --bg: #020617;
+            --card-bg: #020617;
+            --card-border: #1e293b;
+            --accent: #38bdf8;
+            --accent-2: #a855f7;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --text-strong: #f9fafb;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        header.hero {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr);
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            header.hero {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .hero-main h1 {
+            font-size: clamp(2rem, 3vw, 2.4rem);
+            margin: 0 0 8px;
+            color: var(--text-strong);
+            letter-spacing: -0.03em;
+        }
+
+        .hero-main p {
+            margin: 0 0 12px;
+            color: var(--text-muted);
+            max-width: 40rem;
+        }
+
+        .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .hero-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .hero-panel {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 14px 14px 16px;
+        }
+
+        .hero-panel h2 {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .hero-panel p {
+            margin: 0;
+            font-size: 0.86rem;
+            color: var(--text-muted);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 2.2fr);
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        @media (max-width: 960px) {
+            .layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .toc {
+            position: sticky;
+            top: 16px;
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 12px 12px 10px;
+            font-size: 0.8rem;
+        }
+
+        .toc h2 {
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+            color: var(--text-muted);
+        }
+
+        .toc ol {
+            list-style: none;
+            margin: 0;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 2px 0;
+        }
+
+        .toc a {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+        }
+
+        .toc a:hover {
+            background: rgba(51, 65, 85, 0.75);
+            color: var(--text-strong);
+            transform: translateX(2px);
+        }
+
+        main.notes {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        section.card {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--card-border);
+            padding: 14px 14px 12px;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+
+        .card-title h2 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-strong);
+            letter-spacing: -0.01em;
+        }
+
+        .card-tagline {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        h3 {
+            margin: 8px 0 3px;
+            font-size: 0.9rem;
+            color: var(--accent-2);
+        }
+
+        p {
+            margin: 2px 0 6px;
+            font-size: 0.84rem;
+        }
+
+        ul,
+        ol {
+            margin: 4px 0 6px 1rem;
+            padding-left: 0.9rem;
+            font-size: 0.84rem;
+        }
+
+        li+li {
+            margin-top: 2px;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 4px 0 2px;
+        }
+
+        .pill {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-muted);
+        }
+
+        .pill.accent {
+            border-color: rgba(56, 189, 248, 0.8);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .pill.accent-2 {
+            border-color: rgba(168, 85, 247, 0.8);
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        details {
+            margin-top: 6px;
+            border-radius: var(--radius-md);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            padding: 7px 9px;
+            font-size: 0.8rem;
+        }
+
+        details summary {
+            list-style: none;
+            cursor: pointer;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary::after {
+            content: "▼";
+            font-size: 0.7rem;
+            opacity: 0.7;
+            transition: transform 0.15s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(-180deg);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- HERO -->
+        <header class="hero">
+            <div class="hero-main">
+                <h1>RAG with LlamaIndex, LLM Costs, and CrewAI</h1>
+                <p>
+                    Structured study notes on building a Retrieval-Augmented Generation system with LlamaIndex,
+                    understanding LLM economics, and orchestrating agents with CrewAI.
+                </p>
+                <div class="hero-badges">
+                    <span class="hero-badge">RAG Systems</span>
+                    <span class="hero-badge">LLM Cost Modeling</span>
+                    <span class="hero-badge">Agent Orchestration</span>
+                </div>
+            </div>
+
+            <aside class="hero-panel">
+                <h2>Learning Map</h2>
+                <p>
+                    Start with how the LlamaIndex-based RAG demo is wired, then dive into token economics and multi-user
+                    scaling,
+                    and finish with how CrewAI can orchestrate complex multi-step AI workflows.
+                </p>
+            </aside>
+        </header>
+
+        <!-- LAYOUT -->
+        <div class="layout">
+
+            <!-- TOC -->
+            <nav class="toc">
+                <h2>Contents</h2>
+                <ol>
+                    <li><a href="#section-1">1. Overview of the Session</a></li>
+                    <li><a href="#section-2">2. LlamaIndex RAG Pipeline and Indexing</a></li>
+                    <li><a href="#section-3">3. RAG Server, Retrieval, Reranking, and Memory</a></li>
+                    <li><a href="#section-4">4. Token Economics and Cost Modeling</a></li>
+                    <li><a href="#section-5">5. Multi-User Scaling and Architecture</a></li>
+                    <li><a href="#section-6">6. Hosting and Deployment Options</a></li>
+                    <li><a href="#section-7">7. CrewAI Agent Framework</a></li>
+                    <li><a href="#section-8">8. Mental Models and Design Takeaways</a></li>
+                </ol>
+            </nav>
+
+            <!-- MAIN NOTES -->
+            <main class="notes">
+
+                <!-- SECTION 1 -->
+                <section id="section-1" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">1</div>
+                            <h2>Overview of the Session</h2>
+                        </div>
+                        <div class="card-tagline">
+                            What was built, why it matters, and how the pieces fit together.
+                        </div>
+                    </div>
+
+                    <p>
+                        The session wrapped up a practical demonstration of a Retrieval-Augmented Generation (RAG)
+                        system using
+                        LlamaIndex, analyzed the real-world cost of running Large Language Models (LLMs) in production,
+                        and
+                        introduced the CrewAI agent framework for orchestrating multi-step AI workflows.
+                    </p>
+
+                    <h3>Main goals of the session</h3>
+                    <ul>
+                        <li>Complete a working RAG prototype based on LlamaIndex (indexing, retrieval, reranking, and
+                            chat server).</li>
+                        <li>Make LLM costs concrete: tokens, pricing, and why naive designs can explode your budget.
+                        </li>
+                        <li>Highlight multi-user scaling challenges: memory isolation, sessions, and architecture
+                            choices.</li>
+                        <li>Introduce CrewAI as an easier agent framework compared to more low-level graph frameworks
+                            like LangGraph.</li>
+                    </ul>
+
+                    <h3>Key artifacts from the demo</h3>
+                    <ul>
+                        <li><strong>Code and notes</strong> planned for upload to a shared GitHub repository as “Session
+                            4”.</li>
+                        <li>A minimal but realistic <strong>Flask RAG server</strong> using LlamaIndex, GPT‑4, and a
+                            reranker.</li>
+                        <li>A simple <strong>agent-based example</strong> scaffolded with CrewAI (“Hello World” crew).
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">RAG overview</span>
+                        <span class="pill accent-2">Production thinking</span>
+                        <span class="pill">Agents</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 2 -->
+                <section id="section-2" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">2</div>
+                            <h2>LlamaIndex RAG Pipeline and Indexing</h2>
+                        </div>
+                        <div class="card-tagline">
+                            How documents become an index your RAG system can query.
+                        </div>
+                    </div>
+
+                    <p>
+                        The first part of the session focused on finishing the LlamaIndex discussion with a live demo:
+                        loading documents, building an index, and persisting it for use by the RAG server.
+                    </p>
+
+                    <h3>Core files and folders in the demo</h3>
+                    <ul>
+                        <li><strong>load.py</strong> – indexing script that reads PDFs and builds the LlamaIndex index.
+                        </li>
+                        <li><strong>server_rerank_chat.py</strong> – Flask-based chat server using the index and a
+                            reranker.</li>
+                        <li><strong>.env (environment file)</strong> – holds configuration like OpenAI API key and
+                            paths.</li>
+                        <li><strong>data/</strong> – folder containing source PDF documents.</li>
+                        <li><strong>storage/</strong> – folder where the built index is persisted to disk.</li>
+                    </ul>
+
+                    <h3>Environment configuration</h3>
+                    <ul>
+                        <li>The system requires a valid <strong>OpenAI API key</strong>.</li>
+                        <li>Environment variables (names may differ slightly in actual code):
+                            <ul>
+                                <li><strong>index_file</strong> – where to save or load the index from (inside
+                                    <code>storage/</code>).</li>
+                                <li><strong>load_directory</strong> (originally <code>load_directorium</code>) – path to
+                                    the folder with PDFs.</li>
+                            </ul>
+                        </li>
+                        <li>These values are read in <strong>load.py</strong> to drive the indexing process.</li>
+                    </ul>
+
+                    <h3>Indexing pipeline in <code>load.py</code></h3>
+                    <ol>
+                        <li><strong>Read configuration</strong> from environment variables.</li>
+                        <li><strong>Load documents</strong> (PDF files in Serbian Cyrillic, including a “Pravilnik” on
+                            educator career development).</li>
+                        <li><strong>Chunk documents</strong> into smaller segments suitable for embedding (chunk size is
+                            configurable and critical).</li>
+                        <li><strong>Create the index</strong> using LlamaIndex, based on vector embeddings of each
+                            chunk.</li>
+                        <li><strong>Persist the index</strong> to the directory specified by <code>index_file</code>
+                            (within <code>storage/</code>).</li>
+                    </ol>
+
+                    <h3>LlamaIndex storage structure</h3>
+                    <ul>
+                        <li>Uses the LlamaIndex default <strong>List Index</strong> (previously called “GPT Index”).
+                        </li>
+                        <li>Internally:
+                            <ul>
+                                <li><strong>doc_store.json</strong> – document metadata, hashes, and mappings.</li>
+                                <li><strong>index_store.json</strong> – nodes, vectors, and graph-like linkage
+                                    information.</li>
+                            </ul>
+                        </li>
+                        <li>The index itself is backed by <strong>vector embeddings</strong> that enable similarity
+                            search.</li>
+                    </ul>
+
+                    <h3>Swapping out the vector backend</h3>
+                    <ul>
+                        <li>LlamaIndex can use external vector databases instead of its default storage:
+                            <ul>
+                                <li><strong>Faiss</strong> – good for high-performance in-memory similarity search.</li>
+                                <li><strong>ChromaDB</strong> – popular open source vector database with persistence
+                                    options.</li>
+                            </ul>
+                        </li>
+                        <li>This can help when:
+                            <ul>
+                                <li>You need <strong>better scalability</strong> or distributed storage.</li>
+                                <li>You want to <strong>reuse</strong> the same vector store across multiple services.
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <details>
+                        <summary>Why chunk size and corpus matter</summary>
+                        <div>
+                            <p>
+                                Chunk size is a trade-off: smaller chunks give more precise retrieval but increase the
+                                number of
+                                chunks, which can increase retrieval noise and storage size. Larger chunks carry more
+                                context but
+                                risk retrieving irrelevant material if the chunk spans multiple topics.
+                            </p>
+                            <p>
+                                For non-English corpora (for example, Serbian Cyrillic legal texts), it is often
+                                necessary to
+                                experiment with chunk size and embedding models, because defaults tuned for English may
+                                not perform
+                                optimally.
+                            </p>
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">LlamaIndex</span>
+                        <span class="pill accent-2">Indexing pipeline</span>
+                        <span class="pill">Vector stores</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 3 -->
+                <section id="section-3" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">3</div>
+                            <h2>RAG Server, Retrieval, Reranking, and Memory</h2>
+                        </div>
+                        <div class="card-tagline">
+                            How the Flask server turns an index into conversational answers.
+                        </div>
+                    </div>
+
+                    <p>
+                        The second technical focus was the RAG server: a Flask application that performs retrieval,
+                        reranking,
+                        and prompts an LLM (GPT‑4) to synthesize answers, optionally using chat memory.
+                    </p>
+
+                    <h3>High-level request flow</h3>
+                    <ol>
+                        <li>User sends a question to the Flask server.</li>
+                        <li>Server retrieves candidate chunks from the LlamaIndex index using similarity search.</li>
+                        <li>Reranker scores and reorders those candidates, selecting the best subset.</li>
+                        <li>Server constructs a prompt: system instructions + user question + top candidate paragraphs.
+                        </li>
+                        <li>Prompt is sent to GPT‑4, which generates a final answer.</li>
+                        <li>Answer (and optionally references) is returned to the frontend, and memory is updated.</li>
+                    </ol>
+
+                    <h3>Reranking strategy</h3>
+                    <ul>
+                        <li>The server uses a <strong>flag_embedding_reranker</strong>, for example a model like
+                            <strong>BG_reranker_large</strong>.</li>
+                        <li>Reranking acts as a <strong>second-stage filter</strong>:
+                            <ul>
+                                <li>Initial retrieval (vector similarity) produces a “crude” set of candidates.</li>
+                                <li>The reranker applies a more sophisticated relevance model to re-score and narrow
+                                    them down.</li>
+                            </ul>
+                        </li>
+                        <li>Advantages over simple cosine similarity:
+                            <ul>
+                                <li>Understands sentence-level and semantic nuances better.</li>
+                                <li>Often considered <strong>state-of-the-art</strong> among open-source rerankers.</li>
+                                <li>Improves answer quality without changing the base LLM.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>LLM integration and context management</h3>
+                    <ul>
+                        <li><strong>Generative model</strong>: GPT‑4 preview model is used for answer generation.</li>
+                        <li><strong>Separation of roles</strong>:
+                            <ul>
+                                <li>Reranker (e.g., BG_reranker_large) is not the same as GPT‑4.</li>
+                                <li>Reranker: reorders and filters documents.</li>
+                                <li>GPT‑4: reads the selected text and creates the final answer.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Similarity Top K</strong>:
+                            <ul>
+                                <li>Controls how many top candidate paragraphs are sent to the LLM (for example, 10).
+                                </li>
+                                <li>More candidates → more context → potentially higher accuracy.</li>
+                                <li>But also more tokens → higher cost and latency.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>How LLMs actually see the data</h3>
+                    <ul>
+                        <li>LLMs <strong>do not see embeddings</strong>. They see only <strong>plain text</strong>.</li>
+                        <li>Embeddings are used only:
+                            <ul>
+                                <li>When building the index.</li>
+                                <li>When performing similarity search and reranking.</li>
+                            </ul>
+                        </li>
+                        <li>By the time GPT‑4 is called, everything is a text prompt:
+                            <ul>
+                                <li>System instructions (defining role and style).</li>
+                                <li>User question.</li>
+                                <li>Selected retrieved paragraphs as context.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Prompt engineering and instructions</h3>
+                    <ul>
+                        <li>Quality of the prompt is a <strong>dominant factor</strong> in answer quality.</li>
+                        <li>Typical system instructions might include:
+                            <ul>
+                                <li>“You are a legal assistant specialized in Serbian regulations.”</li>
+                                <li>“Use only the provided context.”</li>
+                                <li>“If unsure, say you do not know.”</li>
+                                <li>“Make the answer precise and very short.”</li>
+                            </ul>
+                        </li>
+                        <li>Prompt tuning is iterative: test, refine, and measure output quality.</li>
+                    </ul>
+
+                    <h3>Chat memory and conversation context</h3>
+                    <ul>
+                        <li>The system uses a <strong>chat_memory_buffer</strong> to maintain conversational context.
+                        </li>
+                        <li>With memory:
+                            <ul>
+                                <li>Follow-up questions can omit repeated details (“What about the deadlines?”).</li>
+                                <li>The model sees recent turns and can answer coherently.</li>
+                            </ul>
+                        </li>
+                        <li>Without memory:
+                            <ul>
+                                <li>Each request is independent (“total amnesia”).</li>
+                                <li>The user must repeat all relevant information every time.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>LlamaIndex API volatility</h3>
+                    <ul>
+                        <li>LlamaIndex evolves quickly, and its APIs are <strong>highly volatile</strong>.</li>
+                        <li>Code written now may <strong>break in a few months</strong> due to:
+                            <ul>
+                                <li>Renamed classes or functions.</li>
+                                <li>Changed configuration patterns.</li>
+                                <li>New required parameters.</li>
+                            </ul>
+                        </li>
+                        <li>Production use requires:
+                            <ul>
+                                <li>Version pinning.</li>
+                                <li>Regular migration work.</li>
+                                <li>Automated tests to detect breaking changes.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Tuning modes and “štelovanje”</h3>
+                    <ul>
+                        <li>LlamaIndex offers different <strong>chat engine modes</strong>, such as
+                            <code>condense_plus_context</code>.</li>
+                        <li>Choosing the best mode depends on:
+                            <ul>
+                                <li>Domain (legal, financial, technical documentation, etc.).</li>
+                                <li>Language (for example, Serbian vs English corpora).</li>
+                                <li>Typical question types (fact lookup vs reasoning vs summarization).</li>
+                            </ul>
+                        </li>
+                        <li>Real-world systems often require <strong>empirical tuning</strong>:
+                            <ul>
+                                <li>Adjust chunk size, Top K, reranker settings, and prompts.</li>
+                                <li>Measure accuracy, hallucination rate, and cost per query.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Flask RAG server</span>
+                        <span class="pill accent-2">Reranking</span>
+                        <span class="pill">Chat memory</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 4 -->
+                <section id="section-4" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">4</div>
+                            <h2>Token Economics and Cost Modeling</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Understanding why RAG can become very expensive at scale.
+                        </div>
+                    </div>
+
+                    <p>
+                        A critical part of the session was quantifying LLM costs: how tokens are counted, why answer
+                        generation
+                        dominates the bill, and when using premium models like GPT‑4 becomes economically unsustainable.
+                    </p>
+
+                    <h3>Input vs output tokens</h3>
+                    <ul>
+                        <li>LLM providers bill separately for:
+                            <ul>
+                                <li><strong>Input tokens</strong> – the text you send (prompt + context).</li>
+                                <li><strong>Output tokens</strong> – the text the model generates as an answer.</li>
+                            </ul>
+                        </li>
+                        <li>Example GPT‑4-level pricing (approximate):
+                            <ul>
+                                <li><strong>Input:</strong> about <strong>$1.25 per 1 million tokens</strong>.</li>
+                                <li><strong>Output:</strong> about <strong>$10 per 1 million tokens</strong>.</li>
+                            </ul>
+                        </li>
+                        <li>Output tokens are much more expensive, so:
+                            <ul>
+                                <li>Long, verbose answers cost noticeably more than short, focused ones.</li>
+                                <li>Controlling answer length is an important cost lever.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Typical RAG query size</h3>
+                    <ul>
+                        <li>A realistic RAG query often uses <strong>2,500–3,000 input tokens</strong>:
+                            <ul>
+                                <li>System prompt and instructions.</li>
+                                <li>User question.</li>
+                                <li>Multiple retrieved paragraphs as context.</li>
+                            </ul>
+                        </li>
+                        <li>Sending more context (more Top K or longer chunks) increases:
+                            <ul>
+                                <li>Chance of finding relevant information.</li>
+                                <li>Token count, latency, and cost.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>High-traffic cost estimation</h3>
+                    <ul>
+                        <li>Consider a system with <strong>500,000 queries per day</strong> using a full GPT‑4 model.
+                        </li>
+                        <li>Approximate daily cost:
+                            <ul>
+                                <li>Around <strong>$12,000 per day</strong>.</li>
+                                <li>Which translates to roughly <strong>$400,000 per month</strong>.</li>
+                            </ul>
+                        </li>
+                        <li>This is comparable to running a large, premium infrastructure or a sizable human team.</li>
+                    </ul>
+
+                    <h3>Using mini models to reduce cost</h3>
+                    <ul>
+                        <li>Cheaper <strong>mini models</strong> (for example, a GPT‑4 mini or GPT‑5 mini class) can
+                            reduce:
+                            <ul>
+                                <li>Daily cost for the same traffic down to approximately <strong>$400–$500 per
+                                        day</strong>.</li>
+                                <li>Monthly cost to around <strong>$14,000</strong>.</li>
+                            </ul>
+                        </li>
+                        <li>This can represent a <strong>20–30× price reduction</strong>.</li>
+                        <li>Trade-off:
+                            <ul>
+                                <li>Mini models are typically less capable: weaker reasoning, more hallucinations.</li>
+                                <li>However, in many use cases (FAQ, support, simple retrieval), they are “good enough”.
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>When is RAG economically suitable?</h3>
+                    <ul>
+                        <li>RAG with premium models is often <strong>too expensive</strong> for:
+                            <ul>
+                                <li>Very high traffic public-facing applications that serve hundreds of thousands or
+                                    millions of requests per day.</li>
+                            </ul>
+                        </li>
+                        <li>RAG is <strong>well suited</strong> for:
+                            <ul>
+                                <li>Low-traffic, high-value scenarios (per-user value is high).</li>
+                                <li>Physical information kiosks in:
+                                    <ul>
+                                        <li>Tourist centers.</li>
+                                        <li>Municipal offices.</li>
+                                        <li>Banks and other service desks.</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>In such setups, the LLM is effectively <strong>replacing a human clerk</strong>, making even
+                            a few dollars per day acceptable.</li>
+                    </ul>
+
+                    <details>
+                        <summary>Practical cost-control levers</summary>
+                        <div>
+                            <ul>
+                                <li>Use shorter prompts and enforce concise answers.</li>
+                                <li>Aggressively filter and rerank to send fewer but more relevant chunks.</li>
+                                <li>Route simpler queries to smaller or cheaper models.</li>
+                                <li>Cache frequent questions and answers.</li>
+                                <li>Batch low-latency-tolerant workloads to cheaper infrastructure.</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Token economics</span>
+                        <span class="pill accent-2">Cost modeling</span>
+                        <span class="pill">Premium vs mini models</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 5 -->
+                <section id="section-5" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">5</div>
+                            <h2>Multi-User Scaling and Architecture</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Why a simple global chat engine breaks in production.
+                        </div>
+                    </div>
+
+                    <p>
+                        The demo application was intentionally simple: it used a single global chat engine instance,
+                        which is
+                        acceptable for one user but breaks down in real multi-user environments.
+                    </p>
+
+                    <h3>The singleton chat engine problem</h3>
+                    <ul>
+                        <li>The demo defined a <strong>global chat_engine</strong> object.</li>
+                        <li>Consequences in a real system:
+                            <ul>
+                                <li>All users share the same memory buffer.</li>
+                                <li>Conversations leak into each other’s context.</li>
+                                <li>Answers may mix information from different users, which is a privacy and correctness
+                                    issue.</li>
+                            </ul>
+                        </li>
+                        <li>Therefore, this design is only suitable for:
+                            <ul>
+                                <li>Development and testing.</li>
+                                <li>Single-user demos.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Requirements for multi-user systems</h3>
+                    <ul>
+                        <li>Each user needs their <strong>own session and context</strong>.</li>
+                        <li>Key design principle:
+                            <ul>
+                                <li><strong>No shared conversational memory</strong> between users.</li>
+                            </ul>
+                        </li>
+                        <li>Typical solution:
+                            <ul>
+                                <li>Disable or avoid using the RAG framework’s global internal memory.</li>
+                                <li>Let the <strong>frontend</strong> or an <strong>external store</strong> (such as
+                                    Redis, a database, or session storage) keep the conversation history per user.</li>
+                                <li>Send the relevant history as part of each new query.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Subscription model and token tracking</h3>
+                    <ul>
+                        <li>Production applications often use a <strong>subscription or quota model</strong>.</li>
+                        <li>To implement this:
+                            <ul>
+                                <li>Track <strong>input and output tokens per user</strong>.</li>
+                                <li>Limit daily or monthly usage to control costs.</li>
+                            </ul>
+                        </li>
+                        <li>LLM APIs like OpenAI’s:
+                            <ul>
+                                <li>Return <strong>exact token counts</strong> for each request in the response
+                                    metadata.</li>
+                                <li>Enable straightforward accounting per user or per workspace.</li>
+                            </ul>
+                        </li>
+                        <li>Additionally, Python libraries exist to <strong>estimate tokens locally</strong> for
+                            planning and simulations.</li>
+                    </ul>
+
+                    <h3>Security of API keys</h3>
+                    <ul>
+                        <li>API keys must <strong>never</strong> be exposed in the frontend (JavaScript, mobile app,
+                            etc.).</li>
+                        <li>Risks:
+                            <ul>
+                                <li>Anyone can extract the key and use your paid quota.</li>
+                                <li>In the worst case, this can create a <strong>huge unexpected bill</strong>.</li>
+                            </ul>
+                        </li>
+                        <li>Best practice:
+                            <ul>
+                                <li>Keep keys only on the backend.</li>
+                                <li>Frontend calls your server; your server calls the LLM provider.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Session isolation</span>
+                        <span class="pill accent-2">Token tracking</span>
+                        <span class="pill">Security</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 6 -->
+                <section id="section-6" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">6</div>
+                            <h2>Hosting and Deployment Options</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Ways to run LLMs: API, serverless, local, and cloud providers.
+                        </div>
+                    </div>
+
+                    <p>
+                        To control cost and latency and to satisfy legal or data-locality requirements, the session
+                        reviewed
+                        several hosting strategies for LLMs beyond the default OpenAI API.
+                    </p>
+
+                    <h3>1. Direct LLM provider APIs</h3>
+                    <ul>
+                        <li>Examples: OpenAI, Anthropic, others.</li>
+                        <li>Pros:
+                            <ul>
+                                <li>Simplest to integrate with.</li>
+                                <li>Highly optimized infrastructure run by the provider.</li>
+                                <li>Access to the latest, most capable models.</li>
+                            </ul>
+                        </li>
+                        <li>Cons:
+                            <ul>
+                                <li>Ongoing per-token cost.</li>
+                                <li>Data leaves your infrastructure (depending on provider settings).</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>2. Serverless inference platforms</h3>
+                    <ul>
+                        <li>Examples: Replicate.com, Together AI, and similar platforms.</li>
+                        <li>Features:
+                            <ul>
+                                <li>Offer a marketplace of models with preconfigured environments.</li>
+                                <li>Allow choosing hardware (CPU-only for batch/offline, GPU for real-time).</li>
+                            </ul>
+                        </li>
+                        <li>Use cases:
+                            <ul>
+                                <li>When you want more control over which open source model you use.</li>
+                                <li>When you need to scale up and down quickly without managing hardware yourself.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>3. Self-hosted local inference</h3>
+                    <ul>
+                        <li>Example tools: <strong>Ollama</strong> (for running LLaMA and other open models locally).
+                        </li>
+                        <li>Pros:
+                            <ul>
+                                <li>No per-token cost to a third-party provider.</li>
+                                <li>Data can stay fully on-premise.</li>
+                            </ul>
+                        </li>
+                        <li>Cons:
+                            <ul>
+                                <li>Scalability limitations: typical setups may handle only around <strong>four
+                                        concurrent users</strong> comfortably.</li>
+                                <li>Requires hardware provisioning and expertise (for example, GPUs with Nvidia Docker
+                                    for acceleration).</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>4. Cloud-hosted model platforms</h3>
+                    <ul>
+                        <li>Examples:
+                            <ul>
+                                <li><strong>Amazon Bedrock</strong>.</li>
+                                <li><strong>Azure OpenAI</strong> and similar offerings.</li>
+                            </ul>
+                        </li>
+                        <li>Benefits:
+                            <ul>
+                                <li>Can deploy models <strong>within your cloud region</strong>, often with better data
+                                    governance.</li>
+                                <li>Integrate with existing cloud security, monitoring, and networking.</li>
+                            </ul>
+                        </li>
+                        <li>Useful when:
+                            <ul>
+                                <li>You need compliance (for example, certain data residency requirements).</li>
+                                <li>You want to avoid managing your own GPU clusters.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Serverless inference</span>
+                        <span class="pill accent-2">Self-hosted</span>
+                        <span class="pill">Cloud ML platforms</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 7 -->
+                <section id="section-7" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">7</div>
+                            <h2>CrewAI Agent Framework</h2>
+                        </div>
+                        <div class="card-tagline">
+                            From single prompts to orchestrated multi-agent workflows.
+                        </div>
+                    </div>
+
+                    <p>
+                        The final part of the session introduced <strong>CrewAI</strong>, an agent-based framework
+                        designed to
+                        orchestrate multiple LLM calls through well-defined roles, goals, and tasks. It is conceptually
+                        simpler
+                        for beginners than frameworks like LangGraph, which expose low-level graph topologies.
+                    </p>
+
+                    <h3>Why use agent frameworks?</h3>
+                    <ul>
+                        <li>Without agents:
+                            <ul>
+                                <li>You manually craft a long chain of prompts in code.</li>
+                                <li>You explicitly pipe output of one call into the next.</li>
+                            </ul>
+                        </li>
+                        <li>With agents:
+                            <ul>
+                                <li>You <strong>define roles, goals, and tasks</strong> and let the framework
+                                    orchestrate:
+                                    <ul>
+                                        <li>Who does what.</li>
+                                        <li>In which order.</li>
+                                        <li>How outputs are passed along.</li>
+                                    </ul>
+                                </li>
+                                <li>Reduces boilerplate and clarifies the high-level workflow.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>CrewAI vs LangGraph</h3>
+                    <ul>
+                        <li><strong>LangGraph</strong>:
+                            <ul>
+                                <li>More programmer-oriented.</li>
+                                <li>Exposes an explicit <strong>graph topology</strong>:
+                                    <ul>
+                                        <li>Agents (or steps) are nodes.</li>
+                                        <li>Edges describe transitions, branching, and loops.</li>
+                                    </ul>
+                                </li>
+                                <li>Gives maximum control (and complexity).</li>
+                            </ul>
+                        </li>
+                        <li><strong>CrewAI</strong>:
+                            <ul>
+                                <li>Abstracts away the graph structure.</li>
+                                <li>Focuses on a higher-level abstraction:
+                                    <ul>
+                                        <li>Agents with roles and goals.</li>
+                                        <li>Tasks with descriptions and expected outputs.</li>
+                                    </ul>
+                                </li>
+                                <li>Less control, but easier to get started with.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>CrewAI project structure and scaffolding</h3>
+                    <ul>
+                        <li>Command Line Interface (CLI):
+                            <ul>
+                                <li>Use a command like <code>crew create hello</code> to create a starter project.</li>
+                                <li>The CLI generates a predefined folder structure and naming conventions.</li>
+                            </ul>
+                        </li>
+                        <li>The project typically includes:
+                            <ul>
+                                <li>Files for <strong>agents</strong>.</li>
+                                <li>Files for <strong>tasks</strong>.</li>
+                                <li>Optional files for <strong>tools</strong> and configuration.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Defining agents</h3>
+                    <ul>
+                        <li>Each agent is defined by several core fields:
+                            <ul>
+                                <li><strong>Role</strong> – what the agent is (for example, “senior data researcher”).
+                                </li>
+                                <li><strong>Topic</strong> – a placeholder for the subject or input domain.</li>
+                                <li><strong>Goal</strong> – what the agent is trying to achieve.</li>
+                                <li><strong>Backstory</strong> – additional context to shape the agent’s behavior and
+                                    style.</li>
+                            </ul>
+                        </li>
+                        <li>These fields become part of the <strong>prompt context</strong> sent to the underlying LLM.
+                        </li>
+                    </ul>
+
+                    <h3>Defining tasks</h3>
+                    <ul>
+                        <li>Tasks describe the work to be done:
+                            <ul>
+                                <li><strong>Description</strong> – what this task should produce or analyze.</li>
+                                <li><strong>Expected result</strong> – how you want the output to look (for example, a
+                                    bullet list, a report, a plan).</li>
+                                <li><strong>Assigned agent</strong> – which agent is responsible for completing this
+                                    task.</li>
+                            </ul>
+                        </li>
+                        <li>Example tasks:
+                            <ul>
+                                <li>“Research the current regulations on topic X and produce a summary.”</li>
+                                <li>“Compile a well-structured report from the research results.”</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Tools and extended capabilities</h3>
+                    <ul>
+                        <li>Agents can be equipped with <strong>tools</strong>:
+                            <ul>
+                                <li>Tools are usually Python classes or functions the agent can call.</li>
+                                <li>Examples:
+                                    <ul>
+                                        <li>Web search (for example, via Serper or other APIs).</li>
+                                        <li>Custom calculators (for example, tax calculators, scheduling helpers).</li>
+                                        <li>Internal APIs (for example, knowledge base lookups).</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Tools allow agents to go beyond static context and interact with the outside world.</li>
+                    </ul>
+
+                    <h3>Decorator-based implementation style</h3>
+                    <ul>
+                        <li>CrewAI makes heavy use of <strong>Python decorators</strong>, such as <code>@agent</code>
+                            and <code>@task</code>.</li>
+                        <li>What decorators do in this context:
+                            <ul>
+                                <li>Automatically instantiate and register agents and tasks at runtime.</li>
+                                <li>Populate internal lists and wiring without explicit “add this to crew” code.</li>
+                            </ul>
+                        </li>
+                        <li>Implication:
+                            <ul>
+                                <li>The code can look “magical” because instantiation is not explicit.</li>
+                                <li>Development feels more like <strong>filling in templates and following
+                                        conventions</strong> than writing all plumbing yourself.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>What was done in the session</h3>
+                    <ul>
+                        <li>Scaffolded a <strong>Hello World CrewAI application</strong>.</li>
+                        <li>Set up basic agents and tasks using the default template.</li>
+                        <li>Planned next steps:
+                            <ul>
+                                <li>Add a new agent tailored to the domain.</li>
+                                <li>Implement a custom tool to extend the agent’s capabilities.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Agents</span>
+                        <span class="pill accent-2">Tasks</span>
+                        <span class="pill">Tools</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 8 -->
+                <section id="section-8" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">8</div>
+                            <h2>Mental Models and Design Takeaways</h2>
+                        </div>
+                        <div class="card-tagline">
+                            How to think about RAG, costs, and agent orchestration.
+                        </div>
+                    </div>
+
+                    <p>
+                        To close the session, an analogy was used to illustrate cost trade-offs, and key design lessons
+                        were
+                        distilled to guide future work.
+                    </p>
+
+                    <h3>Luxury taxi vs budget bus analogy</h3>
+                    <ul>
+                        <li>Using GPT‑4 for every single query in a large-scale system is like:
+                            <ul>
+                                <li>Running a <strong>luxury taxi</strong> for every passenger, even if many would be
+                                    fine with a <strong>cheap bus</strong>.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Luxury taxi</strong>:
+                            <ul>
+                                <li>Represents a full, expensive, high-capability model like GPT‑4.</li>
+                                <li>Great for complex, high-stakes tasks that need top quality.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Cheap bus</strong>:
+                            <ul>
+                                <li>Represents smaller or cheaper models, or serverless inference with open models.</li>
+                                <li>Good enough for many routine or simple queries.</li>
+                            </ul>
+                        </li>
+                        <li>The design challenge is to:
+                            <ul>
+                                <li><strong>Identify which requests truly need GPT‑4</strong>.</li>
+                                <li>Route the rest to cheaper infrastructure.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Key design principles to remember</h3>
+                    <ul>
+                        <li><strong>Separate retrieval from generation</strong>:
+                            <ul>
+                                <li>Use embeddings and rerankers to prepare the best possible context.</li>
+                                <li>Let the LLM focus on synthesis and reasoning, not search.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Design for cost from day one</strong>:
+                            <ul>
+                                <li>Track tokens, even during prototyping.</li>
+                                <li>Experiment with mini models early.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Isolate user sessions</strong>:
+                            <ul>
+                                <li>Avoid global chat engines in multi-user scenarios.</li>
+                                <li>Keep per-user history in an external store and pass only what is needed.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Expect framework volatility</strong>:
+                            <ul>
+                                <li>Pin LlamaIndex versions.</li>
+                                <li>Write tests against critical flows (indexing, retrieval, answering).</li>
+                            </ul>
+                        </li>
+                        <li><strong>Use agent frameworks when workflows get complex</strong>:
+                            <ul>
+                                <li>Move from ad hoc prompt chains to structured agents and tasks.</li>
+                                <li>Leverage CrewAI (or similar) when you have multiple steps or roles.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <details>
+                        <summary>Checklist for future RAG projects</summary>
+                        <div>
+                            <ul>
+                                <li>Define your target <strong>traffic level</strong> and budget before choosing models.
+                                </li>
+                                <li>Start with a <strong>small prototype</strong> on a mini model; measure quality and
+                                    cost.</li>
+                                <li>Add <strong>reranking</strong> to improve quality without always needing a larger
+                                    model.</li>
+                                <li>Implement <strong>token logging</strong> and per-user quotas early.</li>
+                                <li>Think about <strong>agent orchestration</strong> when workflows require multiple
+                                    reasoning steps or roles.</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Routing strategies</span>
+                        <span class="pill accent-2">Cost-aware design</span>
+                        <span class="pill">Future work</span>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,3 @@
+export OPENAI_API_KEY=sk-proj-..........
+export INDEX_FILE=storage
+export LOAD_DIR=data
