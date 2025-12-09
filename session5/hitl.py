@@ -6,8 +6,8 @@ from crewai.tasks.task_output import TaskOutput
 from pydantic import BaseModel
 from typing import List
 
-os.environ["SERPER_API_KEY"] = "4e9d2876031c3e1bd26fd69b56bd5e930a42255b"  # serper.dev API key
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["SERPER_API_KEY"] = "....."  # serper.dev API key
+os.environ["OPENAI_API_KEY"] = "...."
 
 # Loading Tools
 search_tool = SerperDevTool()

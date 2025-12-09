@@ -4,7 +4,7 @@ from crewai import Agent, Task, Crew, Process
 # Set your OpenAI key here or via environment variable
 
 
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = "...."
 
 MODEL_NAME = "gpt-5-mini"  # or whatever your OpenAI deployment name is
 
