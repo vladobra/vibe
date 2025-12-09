@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>CrewAI, HITL, and LangGraph – Study Notes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        :root {
+            --bg: #020617;
+            --card-bg: #020617;
+            --card-border: #1e293b;
+            --accent: #38bdf8;
+            --accent-2: #a855f7;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --text-strong: #f9fafb;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        header.hero {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr);
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            header.hero {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .hero-main h1 {
+            font-size: clamp(2rem, 3vw, 2.4rem);
+            margin: 0 0 8px;
+            color: var(--text-strong);
+            letter-spacing: -0.03em;
+        }
+
+        .hero-main p {
+            margin: 0 0 12px;
+            color: var(--text-muted);
+            max-width: 40rem;
+        }
+
+        .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .hero-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .hero-panel {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 14px 14px 16px;
+        }
+
+        .hero-panel h2 {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .hero-panel p {
+            margin: 0;
+            font-size: 0.86rem;
+            color: var(--text-muted);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 2.2fr);
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        @media (max-width: 960px) {
+            .layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .toc {
+            position: sticky;
+            top: 16px;
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 12px 12px 10px;
+            font-size: 0.8rem;
+        }
+
+        .toc h2 {
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+            color: var(--text-muted);
+        }
+
+        .toc ol {
+            list-style: none;
+            margin: 0;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 2px 0;
+        }
+
+        .toc a {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+        }
+
+        .toc a:hover {
+            background: rgba(51, 65, 85, 0.75);
+            color: var(--text-strong);
+            transform: translateX(2px);
+        }
+
+        main.notes {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        section.card {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--card-border);
+            padding: 14px 14px 12px;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+
+        .card-title h2 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-strong);
+            letter-spacing: -0.01em;
+        }
+
+        .card-tagline {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        h3 {
+            margin: 8px 0 3px;
+            font-size: 0.9rem;
+            color: var(--accent-2);
+        }
+
+        p {
+            margin: 2px 0 6px;
+            font-size: 0.84rem;
+        }
+
+        ul,
+        ol {
+            margin: 4px 0 6px 1rem;
+            padding-left: 0.9rem;
+            font-size: 0.84rem;
+        }
+
+        li+li {
+            margin-top: 2px;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 4px 0 2px;
+        }
+
+        .pill {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-muted);
+        }
+
+        .pill.accent {
+            border-color: rgba(56, 189, 248, 0.8);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .pill.accent-2 {
+            border-color: rgba(168, 85, 247, 0.8);
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        details {
+            margin-top: 6px;
+            border-radius: var(--radius-md);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            padding: 7px 9px;
+            font-size: 0.8rem;
+        }
+
+        details summary {
+            list-style: none;
+            cursor: pointer;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary::after {
+            content: "▼";
+            font-size: 0.7rem;
+            opacity: 0.7;
+            transition: transform 0.15s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(-180deg);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- HERO -->
+        <header class="hero">
+            <div class="hero-main">
+                <h1>Session 5: CrewAI, Human in the Loop, and LangGraph – Study Notes</h1>
+                <p>
+                    Concise, structured notes on CrewAI workflows, Human in the Loop (HITL), streaming vs batch
+                    processing, declarative orchestration, and why LangGraph matters for complex control flow.
+                </p>
+                <div class="hero-badges">
+                    <span class="hero-badge">Human in the Loop</span>
+                    <span class="hero-badge">CrewAI Agents & Tasks</span>
+                    <span class="hero-badge">LangGraph & Control Flow</span>
+                </div>
+            </div>
+
+            <aside class="hero-panel">
+                <h2>Learning Map</h2>
+                <p>
+                    Start with the lesson roadmap, then understand HITL, streaming vs batch, and how CrewAI orchestrates
+                    agents and tasks. Finish with dynamic control techniques, LangGraph, and environment stability for
+                    real-world AI projects.
+                </p>
+            </aside>
+        </header>
+
+        <!-- LAYOUT -->
+        <div class="layout">
+
+            <!-- TOC -->
+            <nav class="toc">
+                <h2>Contents</h2>
+                <ol>
+                    <li><a href="#section-1">1. Learning Roadmap and Session Focus</a></li>
+                    <li><a href="#section-2">2. Human in the Loop (HITL) Basics</a></li>
+                    <li><a href="#section-3">3. Streaming vs Batch Processing</a></li>
+                    <li><a href="#section-4">4. CrewAI Workflow and HITL Implementation</a></li>
+                    <li><a href="#section-5">5. Declarative Orchestration and Conditional Tasks</a></li>
+                    <li><a href="#section-6">6. Philosophy and Best-Fit Use Cases</a></li>
+                    <li><a href="#section-7">7. Dynamic Task Creation for Fine-Grained Control</a></li>
+                    <li><a href="#section-8">8. LangGraph and Environment Stability</a></li>
+                </ol>
+            </nav>
+
+            <!-- MAIN NOTES -->
+            <main class="notes">
+
+                <!-- SECTION 1 -->
+                <section id="section-1" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">1</div>
+                            <h2>Learning Roadmap and Session Focus</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Where this lesson sits and what comes next
+                        </div>
+                    </div>
+
+                    <p>
+                        This session continues the discussion of CrewAI and prepares the ground for LangGraph and
+                        security-focused automation topics.
+                    </p>
+
+                    <h3>Current focus</h3>
+                    <ul>
+                        <li>Deepen understanding of CrewAI workflows, agents, tasks, and tools.</li>
+                        <li>Explore how Human in the Loop (HITL) fits into automated flows.</li>
+                        <li>See concrete examples of HITL in content creation and customer support.</li>
+                    </ul>
+
+                    <h3>Next topics in the learning path</h3>
+                    <ul>
+                        <li>LangGraph for graph-based control flow and complex agent orchestration.</li>
+                        <li>Security topics such as prompt injection testing.</li>
+                        <li>Defenses against jailbreak attempts and other model misuse patterns.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">CrewAI</span>
+                        <span class="pill accent-2">Learning roadmap</span>
+                        <span class="pill">Security & jailbreaks</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 2 -->
+                <section id="section-2" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">2</div>
+                            <h2>Human in the Loop (HITL) Basics</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Human checkpoints inside automated AI workflows
+                        </div>
+                    </div>
+
+                    <p>
+                        Human in the Loop (HITL) means a human deliberately intervenes in, supervises, or approves parts
+                        of an otherwise automated generative AI workflow.
+                    </p>
+
+                    <h3>Why HITL matters</h3>
+                    <ul>
+                        <li>Provides a safety net and approval step for critical business processes.</li>
+                        <li>Improves quality control when AI output directly affects users or brand.</li>
+                        <li>Allows humans to override automation when something goes wrong.</li>
+                    </ul>
+
+                    <h3>Typical placement of HITL in a flow</h3>
+                    <ol>
+                        <li>
+                            <strong>Start of the flow:</strong>
+                            The human defines initial parameters, goals, or input data that drive the automation.
+                        </li>
+                        <li>
+                            <strong>Middle of the flow:</strong>
+                            The human reviews or approves intermediate results before the workflow continues, often via
+                            conditional branches.
+                        </li>
+                        <li>
+                            <strong>End / fallback:</strong>
+                            If full automation fails, the process falls back to a human operator for manual handling.
+                        </li>
+                    </ol>
+
+                    <h3>Customer support example</h3>
+                    <ul>
+                        <li>A chatbot tries to resolve a user’s issue using an LLM.</li>
+                        <li>If multiple attempts fail, the conversation is automatically transferred to a human agent.
+                        </li>
+                        <li>Users can also explicitly request a human by typing phrases like “give me a human”.</li>
+                        <li>Technically, the system detects this (via explicit text or sentiment analysis) and:
+                            <ul>
+                                <li>Calls a specific tool or function, or</li>
+                                <li>Switches to a different branch, or</li>
+                                <li>Starts a new human-only workflow, bypassing the automated agent.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Content creation example (semi-automatic Instagram posting)</h3>
+                    <ul>
+                        <li><strong>Goal:</strong> Automatically generate text and images for posts from a topic given
+                            by the human.</li>
+                        <li><strong>HITL checkpoint:</strong> After text is generated, the human approves or rejects it
+                            (e.g., “yes” or “repeat”).</li>
+                        <li><strong>Recycling loop:</strong> If rejected, the system regenerates text until the human
+                            approves.</li>
+                        <li><strong>Full automation target:</strong> Text and images are both generated automatically,
+                            with the human only doing final approval.</li>
+                    </ul>
+
+                    <details>
+                        <summary>Analogy: HITL as a quality inspection point</summary>
+                        <div>
+                            Imagine a small factory with a strict assembly line. Each worker (agent) has a specialized
+                            role.
+                            At certain points, the line stops for a manager (the human) to inspect the product. If the
+                            manager
+                            approves, the line continues. If not, the product is sent back for rework. HITL plays the
+                            same
+                            role in AI workflows: a controlled pause for human judgment before continuing production.
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Approval gates</span>
+                        <span class="pill accent-2">Customer support</span>
+                        <span class="pill">Content creation</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 3 -->
+                <section id="section-3" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">3</div>
+                            <h2>Streaming vs Batch Processing</h2>
+                        </div>
+                        <div class="card-tagline">
+                            How response delivery affects user experience
+                        </div>
+                    </div>
+
+                    <p>
+                        The choice between batch and streaming generation shapes user experience and determines which
+                        workflows feel “live” versus offline.
+                    </p>
+
+                    <h3>Batch processing</h3>
+                    <ul>
+                        <li>The model receives a request and returns the complete answer only after all tokens are
+                            generated.</li>
+                        <li>Users see nothing until the response is fully ready, which can feel slow (e.g., 20 seconds
+                            of silence).</li>
+                        <li>Best suited for offline or non-interactive tasks such as:
+                            <ul>
+                                <li>Large document summarization.</li>
+                                <li>Analytics or calculations run overnight.</li>
+                                <li>Reports delivered later via email.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Streaming generation</h3>
+                    <ul>
+                        <li>A streaming flag or parameter is enabled during inference.</li>
+                        <li>Tokens are flushed to the user interface as soon as they are generated.</li>
+                        <li><strong>UX impact:</strong> The response “typing” effect makes the system feel like a live
+                            human operator.</li>
+                        <li><strong>Use cases:</strong>
+                            <ul>
+                                <li>Live chat interfaces and conversational agents.</li>
+                                <li>Mandatory for live text-to-speech and voice responses (audio must stream as it is
+                                    created).</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Streaming in multi-agent systems</h3>
+                    <ul>
+                        <li>In orchestrated agent workflows (CrewAI, LangGraph, etc.), agents often wait for complete
+                            outputs from previous agents.</li>
+                        <li>Streaming intermediate tokens between agents rarely helps, because each agent needs the full
+                            context.</li>
+                        <li>Streaming is mainly useful at the <strong>final step</strong> when sending output to the end
+                            user.</li>
+                        <li>The benefit there is modest but noticeable (saving a couple of seconds and feeling more
+                            responsive).</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">UX design</span>
+                        <span class="pill accent-2">Streaming tokens</span>
+                        <span class="pill">Live vs offline tasks</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 4 -->
+                <section id="section-4" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">4</div>
+                            <h2>CrewAI Workflow and HITL Implementation</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Agents, tasks, tools, and where humans plug in
+                        </div>
+                    </div>
+
+                    <p>
+                        CrewAI can build surprisingly powerful automation with little code by composing agents, tasks,
+                        and tools into sequential workflows.
+                    </p>
+
+                    <h3>Core building blocks</h3>
+                    <ul>
+                        <li><strong>Agent:</strong> Has a role, context, behavior, and description of who they are and
+                            what they do.</li>
+                        <li><strong>Task:</strong> A specific, concrete operation the agent should perform and the
+                            expected outcome.</li>
+                        <li><strong>Tools:</strong> External capabilities (e.g., Serper API for web search) that agents
+                            can call to complete tasks.</li>
+                        <li>Example flows include a Content Creator Flow and an Email Auto-Responder Flow.</li>
+                    </ul>
+
+                    <h3>Sequential processing in a crew</h3>
+                    <ul>
+                        <li>The “crew” of agents works in a strict sequence: one agent finishes its task and passes the
+                            result to the next.</li>
+                        <li>The execution order is determined by the order of agents and tasks in their respective
+                            lists.</li>
+                        <li>There must be a one-to-one mapping between agents and tasks in a simple sequential setup.
+                        </li>
+                        <li>Variants:
+                            <ul>
+                                <li>One agent can perform multiple tasks (e.g., research then translate results).</li>
+                                <li>Multiple agents with different skill sets can be assigned the same task (e.g., one
+                                    writes Python, one writes C for “Hello World”).</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>Implementing HITL in CrewAI</h3>
+                    <ol>
+                        <li>
+                            <strong>Flagging a task:</strong>
+                            Set <code>human_in_the_loop = true</code> on the task where you want human review.
+                        </li>
+                        <li>
+                            <strong>Execution pause:</strong>
+                            When the agent completes that task, CrewAI pauses and asks the user for feedback (e.g., in
+                            the console).
+                        </li>
+                        <li>
+                            <strong>Feedback pattern:</strong>
+                            The framework usually instructs the user to just press Enter if satisfied, or type
+                            improvement requests if not.
+                        </li>
+                        <li>
+                            <strong>Re-execution:</strong>
+                            If feedback is given, the agent re-runs the task, incorporating the comments into its next
+                            attempt.
+                        </li>
+                        <li>
+                            <strong>Multilingual support:</strong>
+                            If feedback is in another language (e.g., “rewrite this in Serbian”), the LLM adapts and
+                            produces output in that language.
+                        </li>
+                    </ol>
+
+                    <details>
+                        <summary>Analogy: Sequential crew with inspection gates</summary>
+                        <div>
+                            Think of CrewAI as a small assembly line. Each agent is a specialized worker (researcher,
+                            writer, editor).
+                            Tasks move from one worker to the next in order. A HITL checkpoint is like a manager’s
+                            inspection station:
+                            the line stops until the human approves the work. Only then is the item allowed to move to
+                            the next worker.
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Agents & tasks</span>
+                        <span class="pill accent-2">Human in the Loop</span>
+                        <span class="pill">Sequential crews</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 5 -->
+                <section id="section-5" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">5</div>
+                            <h2>Declarative Orchestration and Conditional Tasks</h2>
+                        </div>
+                        <div class="card-tagline">
+                            How CrewAI structures data and limited control flow
+                        </div>
+                    </div>
+
+                    <p>
+                        CrewAI emphasizes declarative orchestration: you mainly describe what you want in natural
+                        language, and the framework handles the flow within certain constraints.
+                    </p>
+
+                    <h3>Agents, tasks, and the importance of prompts</h3>
+                    <ul>
+                        <li>Agents are given roles and backstories (e.g., “You are a data fetcher that uses Serper to
+                            search the web”).</li>
+                        <li>Tasks describe desired outcomes (e.g., “List 10 events happening in this city”).</li>
+                        <li>The highest value often lies in the human-written English descriptions, not the surrounding
+                            glue code.</li>
+                    </ul>
+
+                    <h3>Data validation with Pydantic</h3>
+                    <ul>
+                        <li>CrewAI can use the Python library <strong>Pydantic</strong> to validate structured outputs.
+                        </li>
+                        <li>Pydantic models act like typed data objects (similar to POJOs or Java Beans) with
+                            validation.</li>
+                        <li>Example: a Pydantic <code>Event</code> model ensures the agent returns a structured list of
+                            events in JSON form.</li>
+                        <li>This helps guarantee shape and type of data, even though the content is generated by an LLM.
+                        </li>
+                    </ul>
+
+                    <h3>Conditional tasks: basic control flow</h3>
+                    <ul>
+                        <li>A conditional task is defined with:
+                            <ul>
+                                <li>A description (what to do if conditions are met).</li>
+                                <li>A condition function (e.g., <code>is_data_missing</code>) evaluated against the
+                                    workflow context.</li>
+                            </ul>
+                        </li>
+                        <li>Example condition: “If fewer than 10 events were found, run another search task.”</li>
+                        <li>The condition looks at previous task output, and only if it evaluates to true does the new
+                            task run.</li>
+                    </ul>
+
+                    <details>
+                        <summary>The “mysticism” of declarative orchestration</summary>
+                        <div>
+                            With CrewAI you do not write explicit loops like <code>for</code> or exact step-by-step
+                            algorithms.
+                            Instead, you tweak your natural-language prompts and conditions to steer behavior. This can
+                            feel almost
+                            mystical, because small changes in wording or input can significantly alter what the agents
+                            do, and
+                            you don’t see a traditional program counter stepping through your code.
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Pydantic models</span>
+                        <span class="pill accent-2">Conditional tasks</span>
+                        <span class="pill">Prompt-driven logic</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 6 -->
+                <section id="section-6" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">6</div>
+                            <h2>Philosophy and Best-Fit Use Cases</h2>
+                        </div>
+                        <div class="card-tagline">
+                            When CrewAI shines and when it does not
+                        </div>
+                    </div>
+
+                    <p>
+                        CrewAI is optimized for high-level content and knowledge tasks, not for precise algorithmic
+                        control or step-by-step math.
+                    </p>
+
+                    <h3>Good fit: content and knowledge workflows</h3>
+                    <ul>
+                        <li>Article and blog generation.</li>
+                        <li>Summarization and rewriting tasks.</li>
+                        <li>Sentiment analysis and classification.</li>
+                        <li>Search and RAG (Retrieval-Augmented Generation) workflows.</li>
+                    </ul>
+
+                    <h3>Poor fit: exact algorithms and micro-management</h3>
+                    <ul>
+                        <li>Scenarios requiring exact numeric results and reproducible algorithmic steps.</li>
+                        <li>Cases where you must specify every loop, branch, and computation explicitly.</li>
+                        <li>Mission-critical logic where ambiguity in LLM behavior is unacceptable.</li>
+                    </ul>
+
+                    <h3>Philosophy: trust over micro-management</h3>
+                    <ul>
+                        <li>Using CrewAI is like delegating work to a team of capable people:
+                            <ul>
+                                <li>You give them a mission statement and success criteria.</li>
+                                <li>You trust them to figure out intermediate details.</li>
+                            </ul>
+                        </li>
+                        <li>If you need total control over every step, you should fall back to traditional programming
+                            and use LLMs as tools, not as orchestrators.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Content workflows</span>
+                        <span class="pill accent-2">Delegation model</span>
+                        <span class="pill">Not for strict algorithms</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 7 -->
+                <section id="section-7" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">7</div>
+                            <h2>Dynamic Task Creation for Fine-Grained Control</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Combining CrewAI with standard Python control flow
+                        </div>
+                    </div>
+
+                    <p>
+                        When you need complex branching and strict control, you can step outside the standard sequential
+                        CrewAI execution and orchestrate tasks manually with Python.
+                    </p>
+
+                    <h3>Regaining algorithmic control</h3>
+                    <ul>
+                        <li>Let an agent produce a result (e.g., text or structured data).</li>
+                        <li>Analyze that result in regular Python code:
+                            <ul>
+                                <li>Count words.</li>
+                                <li>Check numerical thresholds.</li>
+                                <li>Inspect specific fields.</li>
+                            </ul>
+                        </li>
+                        <li>Based on this analysis, decide programmatically what should happen next.</li>
+                    </ul>
+
+                    <h3>Dynamic task and agent creation</h3>
+                    <ul>
+                        <li>Create new tasks on the fly depending on earlier outputs (if-then-else logic in Python).
+                        </li>
+                        <li>Instantiate agents dynamically with extra context injected from previous steps.</li>
+                        <li>Example: If the word count is odd, create a “shorten text” task; if even, create a “expand
+                            with examples” task.</li>
+                    </ul>
+
+                    <h3>Trade-offs of manual orchestration</h3>
+                    <ul>
+                        <li><strong>Pros:</strong>
+                            <ul>
+                                <li>Total control over execution order, branching, and loops.</li>
+                                <li>Clear, explicit algorithms written in Python.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Cons:</strong>
+                            <ul>
+                                <li>You lose some of CrewAI’s automatic propagation and higher-level orchestration
+                                    benefits.</li>
+                                <li>The system becomes closer to a thin wrapper around raw LLM API calls.</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <details>
+                        <summary>Analogy: From self-organizing team to tightly managed workflow</summary>
+                        <div>
+                            Default CrewAI usage is like giving a group of experts a mission and letting them
+                            coordinate.
+                            Dynamic task creation with Python is like becoming a strict project manager:
+                            you break down every step, inspect each result, and decide the next action yourself.
+                            Agents become powerful tools inside your carefully controlled algorithm.
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Python control flow</span>
+                        <span class="pill accent-2">Dynamic tasks</span>
+                        <span class="pill">Manual orchestration</span>
+                    </div>
+                </section>
+
+                <!-- SECTION 8 -->
+                <section id="section-8" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">8</div>
+                            <h2>LangGraph and Environment Stability</h2>
+                        </div>
+                        <div class="card-tagline">
+                            Choosing the right framework and freezing your stack
+                        </div>
+                    </div>
+
+                    <p>
+                        For more complex control flows than sequential crews, LangGraph offers a graph-based
+                        alternative. At the same time, rapid library evolution forces you to manage your Python
+                        environment carefully.
+                    </p>
+
+                    <h3>Why LangGraph for complex flows</h3>
+                    <ul>
+                        <li>LangGraph represents workflows as explicit graphs of nodes (agents, tools, steps) and edges
+                            (dependencies, transitions).</li>
+                        <li>You can see and control which node runs when, and under what conditions.</li>
+                        <li>Better suited for:
+                            <ul>
+                                <li>Complex branching and merging logic.</li>
+                                <li>Stateful, multi-step conversations.</li>
+                                <li>Scenarios where the execution graph must be auditable and clear.</li>
+                            </ul>
+                        </li>
+                        <li>CrewAI may be simpler for straightforward content tasks; LangGraph is a more serious
+                            framework that requires dedicated learning.</li>
+                    </ul>
+
+                    <h3>Dealing with fast-changing AI libraries</h3>
+                    <ul>
+                        <li>Frameworks like CrewAI, LlamaIndex, and LangGraph ship frequent releases, sometimes several
+                            per month.</li>
+                        <li>Breaking changes are common and can silently break production code if you always upgrade.
+                        </li>
+                    </ul>
+
+                    <h3>Stability strategy: freeze your environment</h3>
+                    <ul>
+                        <li>Use Docker containers or virtual machines as isolated sandboxes for each project.</li>
+                        <li>Pin library versions and export them to a lock file (e.g., via <code>pip freeze</code>).
+                        </li>
+                        <li>Plan to stick with a fixed set of versions for a longer period (e.g., a year) rather than
+                            constantly upgrading.</li>
+                        <li>Maintain a reliable process for setting up environments, including offline installation if
+                            needed.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">LangGraph</span>
+                        <span class="pill accent-2">Graph-based workflows</span>
+                        <span class="pill">Version pinning</span>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>
