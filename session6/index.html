@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>LLMs, LangChain, Tool Calling, Agents, MCP — Study Notes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        :root {
+            --bg: #020617;
+            --card-bg: #020617;
+            --card-border: #1e293b;
+            --accent: #38bdf8;
+            --accent-2: #a855f7;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --text-strong: #f9fafb;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        header.hero {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr);
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            header.hero {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .hero-main h1 {
+            font-size: clamp(2rem, 3vw, 2.4rem);
+            margin: 0 0 8px;
+            color: var(--text-strong);
+            letter-spacing: -0.03em;
+        }
+
+        .hero-main p {
+            margin: 0 0 12px;
+            color: var(--text-muted);
+            max-width: 46rem;
+        }
+
+        .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .hero-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .hero-panel {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 14px 14px 16px;
+        }
+
+        .hero-panel h2 {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .hero-panel p {
+            margin: 0;
+            font-size: 0.86rem;
+            color: var(--text-muted);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 2.2fr);
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        @media (max-width: 960px) {
+            .layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .toc {
+            position: sticky;
+            top: 16px;
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 12px 12px 10px;
+            font-size: 0.8rem;
+        }
+
+        .toc h2 {
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+            color: var(--text-muted);
+        }
+
+        .toc ol {
+            list-style: none;
+            margin: 0;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 2px 0;
+        }
+
+        .toc a {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+        }
+
+        .toc a:hover {
+            background: rgba(51, 65, 85, 0.75);
+            color: var(--text-strong);
+            transform: translateX(2px);
+        }
+
+        main.notes {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        section.card {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--card-border);
+            padding: 14px 14px 12px;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--accent);
+            flex: 0 0 auto;
+        }
+
+        .card-title h2 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-strong);
+            letter-spacing: -0.01em;
+        }
+
+        .card-tagline {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        h3 {
+            margin: 8px 0 3px;
+            font-size: 0.9rem;
+            color: var(--accent-2);
+        }
+
+        p {
+            margin: 2px 0 6px;
+            font-size: 0.84rem;
+        }
+
+        ul,
+        ol {
+            margin: 4px 0 6px 1rem;
+            padding-left: 0.9rem;
+            font-size: 0.84rem;
+        }
+
+        li+li {
+            margin-top: 2px;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 6px 0 2px;
+        }
+
+        .pill {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-muted);
+        }
+
+        .pill.accent {
+            border-color: rgba(56, 189, 248, 0.8);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .pill.accent-2 {
+            border-color: rgba(168, 85, 247, 0.8);
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        details {
+            margin-top: 8px;
+            border-radius: var(--radius-md);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            padding: 7px 9px;
+            font-size: 0.8rem;
+        }
+
+        details summary {
+            list-style: none;
+            cursor: pointer;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary::after {
+            content: "▼";
+            font-size: 0.7rem;
+            opacity: 0.7;
+            transition: transform 0.15s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(-180deg);
+        }
+
+        .callout {
+            margin-top: 8px;
+            padding: 10px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: rgba(56, 189, 248, 0.08);
+            color: var(--text-main);
+            font-size: 0.83rem;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(148, 163, 184, 0.18);
+            margin: 10px 0 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- HERO -->
+        <header class="hero">
+            <div class="hero-main">
+                <h1>Čas 6: LLMs, LangChain, Tool Calling, Agents, MCP — Study Notes</h1>
+                <p>
+                    Clean, corrected lesson notes focused on practical usage: frameworks, chains, tool calling flows,
+                    tool chaining, agent reliability, prompt engineering, and prompt-injection risks.
+                </p>
+                <div class="hero-badges">
+                    <span class="hero-badge">LLMs</span>
+                    <span class="hero-badge">LangChain</span>
+                    <span class="hero-badge">Tool Calling</span>
+                    <span class="hero-badge">Agents</span>
+                    <span class="hero-badge">Security</span>
+                </div>
+            </div>
+
+            <aside class="hero-panel">
+                <h2>Learning Map</h2>
+                <p>
+                    Read top to bottom for a full mental model: start with LLM philosophy, then frameworks,
+                    then chains, then tool calling, then agents + reliability, and end with prompt injection security.
+                </p>
+            </aside>
+        </header>
+
+        <!-- LAYOUT -->
+        <div class="layout">
+
+            <!-- TOC -->
+            <nav class="toc" aria-label="Table of contents">
+                <h2>Contents</h2>
+                <ol>
+                    <li><a href="#section-1">1. Foundational Context and LLM Philosophy</a></li>
+                    <li><a href="#section-2">2. Framework Landscape: The LangChain Family</a></li>
+                    <li><a href="#section-3">3. LangChain Core: Chains and Pipelines</a></li>
+                    <li><a href="#section-4">4. Tool Calling: Defining and Registering Tools</a></li>
+                    <li><a href="#section-5">5. Tool Calling Flow: The LLM as a Router</a></li>
+                    <li><a href="#section-6">6. When Tool Calling Is Worth It</a></li>
+                    <li><a href="#section-7">7. Advanced Context: MCP (Model Context Protocol)</a></li>
+                    <li><a href="#section-8">8. Tool Chaining: Solving Multi-Step Problems</a></li>
+                    <li><a href="#section-9">9. Agents and Error Management</a></li>
+                    <li><a href="#section-10">10. Prompt Engineering: Patterns and Descriptions</a></li>
+                    <li><a href="#section-11">11. Prompt Injection and Subliminal Signals (Security)</a></li>
+                </ol>
+            </nav>
+
+            <!-- MAIN NOTES -->
+            <main class="notes">
+
+                <!-- 1 -->
+                <section id="section-1" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">1</div>
+                            <h2>Foundational Context and LLM Philosophy</h2>
+                        </div>
+                        <div class="card-tagline">Focus on outcomes, not debates about “real intelligence”</div>
+                    </div>
+
+                    <p>
+                        When working with Large Language Models (LLMs), prioritize results and functionality instead of
+                        arguing whether they “think” like humans.
+                    </p>
+
+                    <h3>Main ideas</h3>
+                    <ul>
+                        <li>LLMs generate text token-by-token (word-by-word), which can resemble how humans build
+                            thoughts incrementally.</li>
+                        <li>Industry value comes from leveraging strengths, not overcomplicating the system with
+                            impractical concerns.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Practical mindset</span>
+                        <span class="pill accent-2">Token-by-token generation</span>
+                        <span class="pill">Engineering focus</span>
+                    </div>
+                </section>
+
+                <!-- 2 -->
+                <section id="section-2" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">2</div>
+                            <h2>Framework Landscape: The LangChain Family</h2>
+                        </div>
+                        <div class="card-tagline">Frameworks to manage LLM interactions (emerged ~2022)</div>
+                    </div>
+
+                    <p>
+                        Modern LLM development often relies on frameworks that organize prompts, tools, memory/state,
+                        evaluation, and orchestration.
+                    </p>
+
+                    <h3>Key components</h3>
+                    <ul>
+                        <li><strong>LangChain:</strong> Early, popular framework for building LLM apps and streaming
+                            prompts/data to models.</li>
+                        <li><strong>LangGraph:</strong> Graph-based orchestration (nodes, edges, state, transitions).
+                            Built on the same execution stack as LangChain.</li>
+                        <li><strong>LangSmith:</strong> Typically used for tracing, evaluation, debugging, and
+                            observability of LLM apps.</li>
+                        <li><strong>LangFlow:</strong> Visual/low-code style building of LangChain-style pipelines.</li>
+                    </ul>
+
+                    <details>
+                        <summary>Why these frameworks matter</summary>
+                        <div>
+                            They reduce boilerplate, standardize patterns (chains, tools, memory, retrieval), and make
+                            complex LLM workflows
+                            easier to build, test, and monitor than raw API calls.
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">LangChain</span>
+                        <span class="pill accent-2">LangGraph</span>
+                        <span class="pill">Observability</span>
+                        <span class="pill">Orchestration</span>
+                    </div>
+                </section>
+
+                <!-- 3 -->
+                <section id="section-3" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">3</div>
+                            <h2>LangChain Core: Chains and Pipelines</h2>
+                        </div>
+                        <div class="card-tagline">A “chain” is a pipeline of linked steps</div>
+                    </div>
+
+                    <p>
+                        LangChain’s core abstraction is the <strong>chain</strong>: a structured pipeline that moves
+                        input through multiple stages.
+                    </p>
+
+                    <h3>What a chain does</h3>
+                    <ul>
+                        <li>Links steps such as: Prompt → LLM → Output parser/formatter.</li>
+                        <li>Hides boilerplate: manual API requests, JSON parsing, and output shaping.</li>
+                        <li>Runs the pipeline via a single execution method (commonly <strong>invoke</strong>).</li>
+                    </ul>
+
+                    <div class="callout">
+                        <strong>Takeaway:</strong> Chains standardize repeatable workflows so you can focus on behavior
+                        and quality instead of glue code.
+                    </div>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Pipeline</span>
+                        <span class="pill accent-2">Invoke</span>
+                        <span class="pill">Parsing</span>
+                        <span class="pill">Boilerplate reduction</span>
+                    </div>
+                </section>
+
+                <!-- 4 -->
+                <section id="section-4" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">4</div>
+                            <h2>Tool Calling: Defining and Registering Tools</h2>
+                        </div>
+                        <div class="card-tagline">Tools are functions with clear inputs, outputs, and descriptions</div>
+                    </div>
+
+                    <p>
+                        Tool calling (also known as function calling) lets an LLM request that external code runs a
+                        specific function.
+                        It is often considered a prerequisite for more advanced orchestration patterns.
+                    </p>
+
+                    <h3>Tool basics</h3>
+                    <ul>
+                        <li>A <strong>tool</strong> is a function: it accepts parameters and returns a result.</li>
+                        <li>Tools can be simple (math) or complex (calling a weather API with a location parameter).
+                        </li>
+                        <li>In LangChain, tools are commonly defined using a dedicated tool annotation (for example,
+                            <strong>@tool</strong>).
+                        </li>
+                    </ul>
+
+                    <h3>Why the description is critical</h3>
+                    <ul>
+                        <li>Tool definitions are sent to model providers (for example, OpenAI) as structured JSON: name,
+                            parameters, and description.</li>
+                        <li>The LLM heavily relies on the description to choose the right tool and fill arguments
+                            correctly.</li>
+                        <li>Frameworks generate the required JSON schema so you don’t craft it manually.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Tool schema</span>
+                        <span class="pill accent-2">Descriptions matter</span>
+                        <span class="pill">Parameters</span>
+                    </div>
+                </section>
+
+                <!-- 5 -->
+                <section id="section-5" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">5</div>
+                            <h2>Tool Calling Flow: The LLM as a Router</h2>
+                        </div>
+                        <div class="card-tagline">The model decides the call; your framework executes it</div>
+                    </div>
+
+                    <p>
+                        The LLM cannot run functions by itself. Instead, it suggests a tool call, and the surrounding
+                        framework executes it.
+                        The overall interaction is handled as one continuous session/flow.
+                    </p>
+
+                    <h3>End-to-end sequence</h3>
+                    <ol>
+                        <li><strong>Request and identification:</strong> The user sends a prompt; the model receives
+                            tool definitions (requires a tool-calling-capable model).</li>
+                        <li><strong>Routing decision:</strong> The model selects a tool (like a service registry) and
+                            extracts arguments from the text.</li>
+                        <li><strong>External execution:</strong> The framework looks up the real function and runs it
+                            with the extracted parameters.</li>
+                        <li><strong>Result feedback:</strong> The framework sends the tool result back to the model as a
+                            tool message.</li>
+                        <li><strong>Final answer generation:</strong> The model uses the original context plus the tool
+                            result to produce a natural-language response.</li>
+                    </ol>
+
+                    <details>
+                        <summary>Fallback behavior</summary>
+                        <div>
+                            If the model cannot confidently select a tool, it replies directly in natural language
+                            (similar to a default case in a switch statement).
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Routing</span>
+                        <span class="pill accent-2">Two-pass response</span>
+                        <span class="pill">Session context</span>
+                    </div>
+                </section>
+
+                <!-- 6 -->
+                <section id="section-6" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">6</div>
+                            <h2>When Tool Calling Is Worth It</h2>
+                        </div>
+                        <div class="card-tagline">Use tools to access data/capabilities outside the model</div>
+                    </div>
+
+                    <p>
+                        Tool calling is valuable when the model needs information it was not trained on or needs to
+                        perform real actions.
+                    </p>
+
+                    <h3>Strong use cases</h3>
+                    <ul>
+                        <li>Checking internal company policies, state, or private knowledge.</li>
+                        <li>Retrieving inventory and stock by storage location.</li>
+                        <li>Calling external APIs (weather, finance, maps, etc.).</li>
+                        <li>Performing actions (booking a restaurant, updating a ticket, sending a message).</li>
+                    </ul>
+
+                    <h3>When it is not necessary</h3>
+                    <ul>
+                        <li>Basic math is usually not a strong reason; many modern LLMs can do it natively.</li>
+                    </ul>
+
+                    <div class="callout">
+                        <strong>Pattern:</strong> In complex scenarios, the model may decide it needs a sequence:
+                        “get weather” → “use weather result” → “recommend outfit.”
+                    </div>
+
+                    <div class="pill-row">
+                        <span class="pill accent">External data</span>
+                        <span class="pill accent-2">Actions</span>
+                        <span class="pill">Private context</span>
+                    </div>
+                </section>
+
+                <!-- 7 -->
+                <section id="section-7" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">7</div>
+                            <h2>Advanced Context: MCP (Model Context Protocol)</h2>
+                        </div>
+                        <div class="card-tagline">Scaling tool ecosystems beyond a few functions</div>
+                    </div>
+
+                    <p>
+                        The Model Context Protocol (MCP) is a deeper topic (often worth its own session). It relates to
+                        tool usage,
+                        but expands the ecosystem and management model.
+                    </p>
+
+                    <h3>Key idea</h3>
+                    <ul>
+                        <li>MCP is similar in spirit to tool chaining, but it supports registering many more tools from
+                            various sources.</li>
+                        <li>Tools are often managed via injected configuration rather than only being defined
+                            programmatically in code.</li>
+                        <li>Tools can be treated like a pluggable catalog that a model-enabled application can access
+                            consistently.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">MCP</span>
+                        <span class="pill accent-2">Tool registry</span>
+                        <span class="pill">Configuration-driven</span>
+                    </div>
+                </section>
+
+                <!-- 8 -->
+                <section id="section-8" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">8</div>
+                            <h2>Tool Chaining: Solving Multi-Step Problems</h2>
+                        </div>
+                        <div class="card-tagline">The model selects and sequences multiple tools</div>
+                    </div>
+
+                    <p>
+                        Tool chaining means the model can determine and execute a sequence of tools to solve a
+                        multi-step natural-language problem.
+                    </p>
+
+                    <h3>What was demonstrated</h3>
+                    <ul>
+                        <li>Given a multi-step word problem (addition, multiplication, then summation), the model
+                            identified the correct sequence of operations.</li>
+                        <li>The tool chain was implicitly defined by the prompt, representing a very high level of
+                            abstraction.</li>
+                        <li>The framework managed the sequence end-to-end (in this context, LangChain was used).</li>
+                    </ul>
+
+                    <details>
+                        <summary>Model capability note</summary>
+                        <div>
+                            The demonstration model was GPT-4o mini and successfully executed the tool chain.
+                            The point: smaller models can still perform useful chained tool behaviors when the tooling
+                            and prompts are structured well.
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Multi-step reasoning</span>
+                        <span class="pill accent-2">Tool sequencing</span>
+                        <span class="pill">High abstraction</span>
+                    </div>
+                </section>
+
+                <!-- 9 -->
+                <section id="section-9" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">9</div>
+                            <h2>Agents and Error Management</h2>
+                        </div>
+                        <div class="card-tagline">Agents replace human work—expect statistical error</div>
+                    </div>
+
+                    <p>
+                        Agents are not deterministic software components. They are closer to replacing human labor and
+                        therefore can make mistakes.
+                    </p>
+
+                    <h3>Agents vs. procedural code</h3>
+                    <ul>
+                        <li><strong>Procedural code</strong> (traditional programming) is designed to behave the same
+                            way every time.</li>
+                        <li><strong>Agents</strong> can vary and sometimes fail, because they are
+                            probabilistic/statistical systems.</li>
+                    </ul>
+
+                    <h3>Statistical error is inevitable</h3>
+                    <ul>
+                        <li>The goal is to <strong>minimize</strong> error rates, not to eliminate them entirely.</li>
+                        <li>Replacing critical deterministic logic (for example, certain SQL operations) with agents can
+                            be risky.</li>
+                        <li>Higher throughput (24/7 automation) can raise the total number of errors simply because many
+                            more actions occur.</li>
+                    </ul>
+
+                    <h3>Reducing risk</h3>
+                    <ul>
+                        <li>Use validation agents (a second agent checks the first agent’s outputs, logs, and
+                            decisions).</li>
+                        <li>Add guardrails: schema checks, allow-lists, unit tests, and human review for high-impact
+                            actions.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Reliability</span>
+                        <span class="pill accent-2">Validation agents</span>
+                        <span class="pill">Guardrails</span>
+                    </div>
+                </section>
+
+                <!-- 10 -->
+                <section id="section-10" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">10</div>
+                            <h2>Prompt Engineering: Patterns and Descriptions</h2>
+                        </div>
+                        <div class="card-tagline">Better prompts and better tool descriptions drive better outcomes
+                        </div>
+                    </div>
+
+                    <p>
+                        Prompt engineering matters most when orchestrating tools and agents. Clarity and structure
+                        strongly influence output quality.
+                    </p>
+
+                    <h3>Most important lever: tool descriptions</h3>
+                    <ul>
+                        <li>The tool description is often the single most important input for tool selection and correct
+                            argument extraction.</li>
+                        <li>Write descriptions like a specification: what it does, when to use it, and constraints.</li>
+                    </ul>
+
+                    <h3>Optimal prompt patterns</h3>
+                    <ul>
+                        <li>Different tasks have different “best” prompt structures.</li>
+                        <li>Example pattern for image generation prompts: subject → location → objects → relationships →
+                            camera → photographic style.</li>
+                        <li>Suboptimal patterns usually produce suboptimal results.</li>
+                    </ul>
+
+                    <div class="divider"></div>
+
+                    <h3>Prompt engineering may be a transitory skill</h3>
+                    <ul>
+                        <li>Prompt engineering emerged early in LLM adoption, similar to how SEO emerged with search
+                            engines.</li>
+                        <li>It may evolve into newer disciplines (for example, context engineering) as systems become
+                            more capable and automated.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Prompt patterns</span>
+                        <span class="pill accent-2">Tool descriptions</span>
+                        <span class="pill">Context engineering</span>
+                    </div>
+                </section>
+
+                <!-- 11 -->
+                <section id="section-11" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">11</div>
+                            <h2>Prompt Injection and Subliminal Signals (Security)</h2>
+                        </div>
+                        <div class="card-tagline">Invisible inputs can manipulate model behavior</div>
+                    </div>
+
+                    <p>
+                        LLMs can be manipulated by adversarial inputs—sometimes embedded in ways humans may not notice.
+                        This creates real security risk.
+                    </p>
+
+                    <h3>Invisible or “subliminal” prompt injection</h3>
+                    <ul>
+                        <li>Models can read and act on transparent/invisible text embedded in images, even when a human
+                            viewer cannot see it.</li>
+                        <li>This resembles “subliminal perception” experiments (hidden messages flashed too quickly for
+                            conscious perception).</li>
+                    </ul>
+
+                    <h3>Why it matters</h3>
+                    <ul>
+                        <li><strong>Fraud risk:</strong> hidden instructions can attempt to override user intent and
+                            exfiltrate sensitive information.</li>
+                        <li><strong>Creative use:</strong> creators could embed invisible “watermark instructions” to
+                            guide how an image should be processed later.</li>
+                    </ul>
+
+                    <details>
+                        <summary>Practical mitigation ideas</summary>
+                        <div>
+                            Treat images and documents as untrusted input. Apply content sanitization, model-side
+                            instruction hierarchy,
+                            allow-listed tool use, and robust logging/monitoring for suspicious instruction patterns.
+                        </div>
+                    </details>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Prompt injection</span>
+                        <span class="pill accent-2">Multimodal risk</span>
+                        <span class="pill">Security</span>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>
