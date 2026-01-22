@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Model Context Protocol (MCP) & Tool Calling — Study Notes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        :root {
+            --bg: #020617;
+            --card-bg: #020617;
+            --card-border: #1e293b;
+            --accent: #38bdf8;
+            --accent-2: #a855f7;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --text-strong: #f9fafb;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        header.hero {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr);
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            header.hero {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .hero-main h1 {
+            font-size: clamp(2rem, 3vw, 2.4rem);
+            margin: 0 0 8px;
+            color: var(--text-strong);
+            letter-spacing: -0.03em;
+        }
+
+        .hero-main p {
+            margin: 0 0 12px;
+            color: var(--text-muted);
+            max-width: 46rem;
+        }
+
+        .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .hero-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .hero-panel {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 14px 14px 16px;
+        }
+
+        .hero-panel h2 {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .hero-panel p {
+            margin: 0;
+            font-size: 0.86rem;
+            color: var(--text-muted);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 2.2fr);
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        @media (max-width: 960px) {
+            .layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .toc {
+            position: sticky;
+            top: 16px;
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 12px 12px 10px;
+            font-size: 0.8rem;
+        }
+
+        .toc h2 {
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+            color: var(--text-muted);
+        }
+
+        .toc ol {
+            list-style: none;
+            margin: 0;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 2px 0;
+        }
+
+        .toc a {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+        }
+
+        .toc a:hover {
+            background: rgba(51, 65, 85, 0.75);
+            color: var(--text-strong);
+            transform: translateX(2px);
+        }
+
+        main.notes {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        section.card {
+            background: radial-gradient(circle at top left, #111827, #020617 55%);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--card-border);
+            padding: 14px 14px 12px;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--accent);
+            flex: 0 0 auto;
+        }
+
+        .card-title h2 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-strong);
+            letter-spacing: -0.01em;
+        }
+
+        .card-tagline {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        h3 {
+            margin: 8px 0 3px;
+            font-size: 0.9rem;
+            color: var(--accent-2);
+        }
+
+        p {
+            margin: 2px 0 6px;
+            font-size: 0.84rem;
+        }
+
+        ul,
+        ol {
+            margin: 4px 0 6px 1rem;
+            padding-left: 0.9rem;
+            font-size: 0.84rem;
+        }
+
+        li+li {
+            margin-top: 2px;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 8px 0 2px;
+        }
+
+        .pill {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .pill.accent {
+            border-color: rgba(56, 189, 248, 0.8);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .pill.accent-2 {
+            border-color: rgba(168, 85, 247, 0.8);
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        details {
+            margin-top: 8px;
+            border-radius: var(--radius-md);
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            padding: 7px 9px;
+            font-size: 0.8rem;
+        }
+
+        details summary {
+            list-style: none;
+            cursor: pointer;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary::after {
+            content: "▼";
+            font-size: 0.7rem;
+            opacity: 0.7;
+            transition: transform 0.15s;
+            flex: 0 0 auto;
+        }
+
+        details[open] summary::after {
+            transform: rotate(-180deg);
+        }
+
+        .note {
+            color: var(--text-muted);
+            border-left: 2px solid rgba(56, 189, 248, 0.55);
+            padding-left: 10px;
+            margin-top: 6px;
+        }
+
+        code.kbd {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.78rem;
+            color: var(--text-strong);
+            background: rgba(2, 6, 23, 0.55);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            padding: 2px 6px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- HERO -->
+        <header class="hero">
+            <div class="hero-main">
+                <h1>Čas 7: Model Context Protocol (MCP) & Tool Calling — Study Notes</h1>
+                <p>
+                    A structured, visual set of notes explaining how tool calling evolved into standardized protocols
+                    (MCP),
+                    how MCP is architected, how orchestration works in real apps, and how security is handled in
+                    production systems.
+                </p>
+                <div class="hero-badges">
+                    <span class="hero-badge">Tool Calling</span>
+                    <span class="hero-badge">MCP Architecture</span>
+                    <span class="hero-badge">Orchestration</span>
+                    <span class="hero-badge">FastMCP</span>
+                    <span class="hero-badge">Security</span>
+                </div>
+            </div>
+
+            <aside class="hero-panel">
+                <h2>Learning Map</h2>
+                <p>
+                    Read top-to-bottom: start with how function calling became standardized, then learn MCP’s
+                    host/client/server model,
+                    connection modes (local vs remote), multi-model orchestration, implementation patterns, and security
+                    practices.
+                </p>
+            </aside>
+        </header>
+
+        <!-- LAYOUT -->
+        <div class="layout">
+
+            <!-- TOC -->
+            <nav class="toc">
+                <h2>Contents</h2>
+                <ol>
+                    <li><a href="#section-1">1. Evolution: Tool Calling to Standardized Protocols</a></li>
+                    <li><a href="#section-2">2. MCP Architecture: Host, Client, Server</a></li>
+                    <li><a href="#section-3">3. Connection Modes: Local vs Remote (SSE)</a></li>
+                    <li><a href="#section-4">4. Orchestration Pattern: Three-Model Flow</a></li>
+                    <li><a href="#section-5">5. FastMCP: Practical Implementation Notes</a></li>
+                    <li><a href="#section-6">6. Industry Impact: MCP as a Facade</a></li>
+                    <li><a href="#section-7">7. Example Tooling: Selenium MCP Server</a></li>
+                    <li><a href="#section-8">8. Security & Authentication in MCP Systems</a></li>
+                </ol>
+            </nav>
+
+            <!-- MAIN NOTES -->
+            <main class="notes">
+
+                <!-- 1 -->
+                <section id="section-1" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">1</div>
+                            <h2>Evolution: Tool Calling to Standardized Protocols</h2>
+                        </div>
+                        <div class="card-tagline">From hidden “boilerplate” to enterprise-ready interoperability</div>
+                    </div>
+
+                    <p>
+                        Early tool calling was mainly an application-level pattern: libraries hid repetitive glue code
+                        that connects an LLM
+                        to functions. Over time, the ecosystem pushed toward standard protocols so tools could be reused
+                        across clients and vendors.
+                    </p>
+
+                    <h3>Core concepts</h3>
+                    <ul>
+                        <li><strong>Tool calling</strong> abstracts “boilerplate” code: intent recognition, tool
+                            selection, and parameter extraction.</li>
+                        <li><strong>Orchestration flow</strong>: the orchestrator runs the tool and formats results to
+                            answer the original user query (often called <strong>function calling</strong>).</li>
+                        <li><strong>MCP emergence</strong>: introduced around late 2023 / early 2024 to standardize
+                            these interactions, roughly a couple years after tool APIs became common.</li>
+                    </ul>
+
+                    <h3>MCP vs UTCP</h3>
+                    <ul>
+                        <li><strong>UTCP (Universal Tool Protocol)</strong>: a newer, lightweight approach where agents
+                            call tools more directly.</li>
+                        <li><strong>MCP</strong>: a more structured (“heavyweight”) protocol with standardized
+                            components; commonly favored in enterprise environments.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Function Calling</span>
+                        <span class="pill accent-2">Standardization</span>
+                        <span class="pill">Interoperability</span>
+                    </div>
+
+                    <details>
+                        <summary>Why standardization matters</summary>
+                        <div>
+                            Standard protocols reduce one-off integrations. Instead of re-implementing tool schemas,
+                            routing logic, and transport conventions
+                            for each service, a client can integrate via one protocol and swap/scale tool providers more
+                            easily.
+                        </div>
+                    </details>
+                </section>
+
+                <!-- 2 -->
+                <section id="section-2" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">2</div>
+                            <h2>MCP Architecture: Host, Client, Server</h2>
+                        </div>
+                        <div class="card-tagline">A three-tier layout for scalable tool ecosystems</div>
+                    </div>
+
+                    <p>
+                        MCP is commonly described as a hierarchy of components that separates where things run (host),
+                        how they coordinate (client), and where tool logic lives (server).
+                    </p>
+
+                    <h3>Three tiers</h3>
+                    <ul>
+                        <li><strong>MCP Host</strong>: the environment running everything (cloud VM, container, Node
+                            runtime, laptop).</li>
+                        <li><strong>MCP Client</strong>: runs on the host and speaks the MCP protocol to one or many
+                            servers.</li>
+                        <li><strong>MCP Server</strong>: behaves like a domain-focused API gateway (weather, FX rates,
+                            web automation), exposing tools behind a standard interface.</li>
+                    </ul>
+
+                    <p class="note">
+                        Key advantage: one MCP client can register and manage <strong>hundreds</strong> of MCP servers
+                        simultaneously—useful for large, modular agent systems.
+                    </p>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Host</span>
+                        <span class="pill accent-2">Client</span>
+                        <span class="pill">Server</span>
+                        <span class="pill">API Gateway Pattern</span>
+                    </div>
+                </section>
+
+                <!-- 3 -->
+                <section id="section-3" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">3</div>
+                            <h2>Connection Modes: Local vs Remote (SSE)</h2>
+                        </div>
+                        <div class="card-tagline">How transport changes process lifecycle and deployment</div>
+                    </div>
+
+                    <p>
+                        The client-to-server connection method determines whether the server runs as an on-demand local
+                        process
+                        or as a continuously running remote service.
+                    </p>
+
+                    <h3>Local (Studio / local process)</h3>
+                    <ul>
+                        <li>The “server” is a local Python script or executable on the same machine as the client.</li>
+                        <li>When a tool is needed, the client executes the script as a <strong>one-time
+                                process</strong>, performs the task, then exits.</li>
+                        <li>Good for fast iteration, demos, and development setups.</li>
+                    </ul>
+
+                    <h3>Remote (SSE / classic client-server)</h3>
+                    <ul>
+                        <li>The server is a long-running process hosted remotely.</li>
+                        <li>The client connects via a URL and port (for example, 8000 or 10000).</li>
+                        <li>Better for shared services, centralized credentials, observability, and production scaling.
+                        </li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Local Execution</span>
+                        <span class="pill accent-2">SSE</span>
+                        <span class="pill">Long-Running Server</span>
+                    </div>
+
+                    <details>
+                        <summary>Quick mental model</summary>
+                        <div>
+                            Local mode is like “run a command-line tool when needed.”
+                            Remote mode is like “call an always-on service endpoint.”
+                        </div>
+                    </details>
+                </section>
+
+                <!-- 4 -->
+                <section id="section-4" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">4</div>
+                            <h2>Orchestration Pattern: Three-Model Flow</h2>
+                        </div>
+                        <div class="card-tagline">Router → Chat → Answer for reliability and UX</div>
+                    </div>
+
+                    <p>
+                        In more capable applications (for example, a weather chatbot), developers often chain multiple
+                        specialized LLM stages
+                        rather than relying on a single model to do everything.
+                    </p>
+
+                    <h3>The three stages</h3>
+                    <ol>
+                        <li>
+                            <strong>Router model</strong>: selects the tool and extracts parameters (example: city name
+                            from “What’s the weather in Paris?”).
+                            <div class="note">
+                                Router consistency is critical. Set <code class="kbd">temperature = 0</code> so the
+                                router is deterministic and predictable.
+                            </div>
+                        </li>
+                        <li>
+                            <strong>General chat model</strong>: handles non-tool queries (greetings, small talk,
+                            general explanations).
+                        </li>
+                        <li>
+                            <strong>Answer model</strong>: converts tool output (often raw JSON) into a concise, factual
+                            response for the end user.
+                        </li>
+                    </ol>
+
+                    <h3>Why prompt-based routing helps</h3>
+                    <ul>
+                        <li>Instead of rigid <strong>if/else</strong> logic, a system prompt can guide routing decisions
+                            (weather, air quality, or clarify missing info).</li>
+                        <li>Helps scale across many intents without hardcoding every condition.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Routing</span>
+                        <span class="pill accent-2">Temperature 0</span>
+                        <span class="pill">Tool Output → Natural Language</span>
+                    </div>
+                </section>
+
+                <!-- 5 -->
+                <section id="section-5" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">5</div>
+                            <h2>FastMCP: Practical Implementation Notes</h2>
+                        </div>
+                        <div class="card-tagline">Build MCP servers quickly with Python decorators and async calls</div>
+                    </div>
+
+                    <p>
+                        FastMCP is a Python library designed to simplify MCP server construction: define a server,
+                        decorate functions as tools,
+                        and support async execution for external I/O.
+                    </p>
+
+                    <h3>Implementation highlights</h3>
+                    <ul>
+                        <li><strong>Server creation</strong>: instantiate a server with minimal setup; add tools via
+                            Python decorators/annotations on regular functions.</li>
+                        <li><strong>Async execution</strong>: tool invocation uses an async call (commonly described as
+                            a <code class="kbd">call_tool</code> style API), so the app can wait on external services
+                            without freezing.</li>
+                        <li><strong>Client management</strong>: configure servers either in code or via a JSON config
+                            listing server connection parameters (local paths or remote URLs).</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">FastMCP</span>
+                        <span class="pill accent-2">Async I/O</span>
+                        <span class="pill">Decorators</span>
+                        <span class="pill">JSON Config</span>
+                    </div>
+
+                    <details>
+                        <summary>What “async” protects you from</summary>
+                        <div>
+                            Without async, network calls (weather APIs, databases, browsers) can block the whole
+                            application thread.
+                            Async lets the runtime continue handling other work while waiting for responses.
+                        </div>
+                    </details>
+                </section>
+
+                <!-- 6 -->
+                <section id="section-6" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">6</div>
+                            <h2>Industry Impact: MCP as a Facade</h2>
+                        </div>
+                        <div class="card-tagline">Replacing raw, service-specific APIs with a standardized “front door”
+                        </div>
+                    </div>
+
+                    <p>
+                        Historically, every API integration forced developers to repeat the same work: authentication,
+                        request formatting,
+                        endpoint discovery, and response validation. MCP changes the integration unit from “raw API” to
+                        “standard tool server.”
+                    </p>
+
+                    <h3>What MCP replaces</h3>
+                    <ul>
+                        <li>Manual endpoint wiring, per-service auth quirks, and bespoke JSON validation per vendor.
+                        </li>
+                        <li>One-off wrappers that are hard to reuse across projects and teams.</li>
+                    </ul>
+
+                    <h3>What MCP enables</h3>
+                    <ul>
+                        <li>Companies can provide an <strong>MCP server</strong> that hides internal complexity behind a
+                            consistent protocol.</li>
+                        <li>Developers learn one interaction style instead of memorizing every vendor’s endpoints and
+                            auth nuances.</li>
+                        <li>Cleaner separation of concerns: app logic focuses on “what to do,” the MCP server focuses on
+                            “how to do it.”</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Facade Pattern</span>
+                        <span class="pill accent-2">Developer Productivity</span>
+                        <span class="pill">Standard Interface</span>
+                    </div>
+                </section>
+
+                <!-- 7 -->
+                <section id="section-7" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">7</div>
+                            <h2>Example Tooling: Selenium MCP Server</h2>
+                        </div>
+                        <div class="card-tagline">Natural language → browser actions across many websites</div>
+                    </div>
+
+                    <p>
+                        A Selenium-backed MCP server can translate human instructions into browser automation steps.
+                        This moves automation from brittle, site-specific scripts toward reusable, model-driven actions.
+                    </p>
+
+                    <h3>Capabilities</h3>
+                    <ul>
+                        <li><strong>Natural language automation</strong>: instructions like “Click the login button”
+                            become concrete browser operations.</li>
+                        <li><strong>Versatility</strong>: one implementation can generalize across many sites because
+                            the model interprets page structure on the fly.</li>
+                        <li><strong>Model quality matters</strong>: higher-tier models (such as GPT-class models)
+                            usually perform better than smaller local models that may miss UI targets.</li>
+                    </ul>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Selenium</span>
+                        <span class="pill accent-2">Web Automation</span>
+                        <span class="pill">LLM-Powered Control</span>
+                    </div>
+
+                    <details>
+                        <summary>Why this differs from traditional Selenium scripts</summary>
+                        <div>
+                            Traditional scripts hardcode selectors and page flows for one website.
+                            With an LLM in the loop, the system can adapt to differing layouts and labels—often reducing
+                            per-site custom work.
+                        </div>
+                    </details>
+                </section>
+
+                <!-- 8 -->
+                <section id="section-8" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="badge">8</div>
+                            <h2>Security & Authentication in MCP Systems</h2>
+                        </div>
+                        <div class="card-tagline">Two trust boundaries: client↔server and server↔external APIs</div>
+                    </div>
+
+                    <p>
+                        MCP deployments typically involve two separate security layers:
+                        authorizing the client to use the MCP server, and authorizing the MCP server to access external
+                        services.
+                    </p>
+
+                    <h3>Two security layers</h3>
+                    <ul>
+                        <li><strong>Client-to-server trust</strong>: the client must be allowed to connect to and use
+                            the MCP server.</li>
+                        <li><strong>Server-to-API authentication</strong>: the MCP server holds credentials and uses
+                            them to call third-party services (Google, GitHub, internal databases, etc.).</li>
+                    </ul>
+
+                    <h3>Credential handling best practices</h3>
+                    <ul>
+                        <li>Store API keys and bearer tokens in <strong>environment variables</strong> or
+                            <strong>server-side config</strong> (not in the client, not exposed to end users).
+                        </li>
+                        <li>Common pattern: one MCP server manages one set of credentials for a specific service or
+                            domain.</li>
+                    </ul>
+
+                    <p class="note">
+                        Practical takeaway: keep secrets server-side. The client should request a capability; the server
+                        performs the authenticated action.
+                    </p>
+
+                    <div class="pill-row">
+                        <span class="pill accent">Authorization</span>
+                        <span class="pill accent-2">Secrets Management</span>
+                        <span class="pill">Least Privilege</span>
+                    </div>
+
+                    <details>
+                        <summary>Why splitting trust boundaries helps</summary>
+                        <div>
+                            Separating “who can call the tool” from “how the tool authenticates to upstream services”
+                            reduces secret leakage risk and
+                            allows centralized rotation, auditing, and access control at the server layer.
+                        </div>
+                    </details>
+                </section>
+
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>
