@@ -7,7 +7,7 @@ from typing import Literal
 from langchain_openai import ChatOpenAI
 from langchain_core.runnables.graph import MermaidDrawMethod
 
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = ""
 # Define LLM instance
 #llm = Ollama(model="phi4:14b", temperature=0.7)
 llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
