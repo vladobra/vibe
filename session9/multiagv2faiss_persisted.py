@@ -1,6 +1,14 @@
 import getpass
 import os
 
+# ── LangSmith tracing ──────────────────────────────────────────────
+# Sign up free at https://smith.langchain.com and paste your API key below.
+# Set LANGCHAIN_TRACING_V2 to "false" (or remove the block) to disable tracing.
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"]    = "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"          # ← paste your key here
+os.environ["LANGCHAIN_PROJECT"]    = "session9-rag-agent"  # project name in LangSmith UI
+# os.environ["LANGCHAIN_ENDPOINT"] = "http://localhost:1984"  # uncomment for self-hosted
+
 # Ollama model name ollama run 
 #local_llm = "ticlazau/meta-llama-3.1-8b-instruct"
 local_llm="adrienbrault/phi3-medium-128k:q4_K_M"
